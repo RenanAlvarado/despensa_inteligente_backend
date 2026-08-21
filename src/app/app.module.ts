@@ -5,6 +5,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { validateEnv } from '../config/env.validation';
+import { BrandsModule } from '../modules/brands/brands.module';
+import { CategoriesModule } from '../modules/categories/categories.module';
 
 @Module({
   imports: [
@@ -34,6 +36,8 @@ import { validateEnv } from '../config/env.validation';
         synchronize: false,
       }),
     }),
+    BrandsModule,
+    CategoriesModule,
   ],
   controllers: [AppController],
   providers: [AppService],
