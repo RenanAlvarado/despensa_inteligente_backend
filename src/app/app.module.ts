@@ -7,6 +7,7 @@ import { AppService } from './app.service';
 import { validateEnv } from '../config/env.validation';
 import { BrandsModule } from '../modules/brands/brands.module';
 import { CategoriesModule } from '../modules/categories/categories.module';
+import { ProductsModule } from '../modules/products/products.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { CategoriesModule } from '../modules/categories/categories.module';
     }),
     BrandsModule,
     CategoriesModule,
+    ProductsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
