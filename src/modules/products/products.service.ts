@@ -31,7 +31,16 @@ export class ProductsService {
   }
 
   // Listar todos ou filtrar
-  async findAll(): Promise<Product[]> {
+  async findAll(name?: string): Promise<Product[]> {
+    if (name) {
+      return this.productRepository
+        .createQueryBuilder('product')
+        .where('product.name LIKE :name', {
+          name: `%${name}%`,
+        })
+        .getMany();
+    }
+
     return this.productRepository.find();
   }
 
