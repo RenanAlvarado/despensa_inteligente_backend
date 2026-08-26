@@ -21,6 +21,29 @@ export class CategoriesService {
     return this.categoryRepository.save(category);
   }
 
+  // Busca e criação Via Nome
+  async findOrCreateByName(name: string): Promise<Category> {
+    // Tirar espaços em branco
+    const normalizedName = name.trim();
+
+    // Buscar
+    const category = await this.categoryRepository.findOne({
+      where: {
+        name: normalizedName,
+      },
+    });
+
+    if (category) {
+      return category;
+    }
+
+    const newCategory = this.categoryRepository.create({
+      name,
+    });
+
+    return this.categoryRepository.save(newCategory);
+  }
+
   // Listar Todas as Marcas ou usar filtros
   async findAll(name?: string): Promise<Category[]> {
     if (name) {

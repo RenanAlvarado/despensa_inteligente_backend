@@ -23,6 +23,29 @@ export class BrandsService {
     return this.brandRepository.save(brand);
   }
 
+  // Busca e criação Via Nome
+  async findOrCreateByName(name: string): Promise<Brand> {
+    // Tirar espaços em branco
+    const normalizedName = name.trim();
+
+    // Buscar
+    const brand = await this.brandRepository.findOne({
+      where: {
+        name: normalizedName,
+      },
+    });
+
+    if (brand) {
+      return brand;
+    }
+
+    const newBrand = this.brandRepository.create({
+      name,
+    });
+
+    return this.brandRepository.save(newBrand);
+  }
+
   // Listar Todas as Marcas ou usar filtros
   async findAll(name?: string): Promise<Brand[]> {
     if (name) {

@@ -9,7 +9,7 @@ import {
   Min,
 } from 'class-validator';
 
-import { UnitType } from '../enums/unit-type.enum';
+import { UnitType } from '../../../common/enums/unit-type.enum';
 
 export class CreateProductDto {
   @IsInt({ message: 'ID da marca deve ser um inteiro' })
