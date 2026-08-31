@@ -1,9 +1,11 @@
 import { IsNotEmpty, IsString, MaxLength } from 'class-validator';
+import { Trim } from '../../../common/decorators/trim.decorator';
 
 export class CreateBrandDto {
   @MaxLength(100, {
     message: 'Nome não pode ter mais de 100 caractéres',
   })
+  @Trim()
   @IsString({
     message: 'Nome deve ser String',
   })

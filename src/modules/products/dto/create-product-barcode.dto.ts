@@ -1,4 +1,5 @@
 import { IsNotEmpty, IsString, Length, Matches } from 'class-validator';
+import { Trim } from '../../../common/decorators/trim.decorator';
 
 export class CreateProductByBarcodeDto {
   @Matches(/^\d{13}$/, {
@@ -7,6 +8,7 @@ export class CreateProductByBarcodeDto {
   @Length(13, 13, {
     message: 'O código de barras deve possuir exatamente 13 dígitos.',
   })
+  @Trim()
   @IsString({
     message: 'O código de barras deve ser uma string.',
   })

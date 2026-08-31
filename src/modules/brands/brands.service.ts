@@ -1,5 +1,5 @@
 // Imports
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { CreateBrandDto } from './dto/create-brand.dto';
 import { UpdateBrandDto } from './dto/update-brand.dto';
 import { NotFoundException } from '@nestjs/common';
@@ -16,6 +16,19 @@ export class BrandsService {
 
   // Criar Marca
   async create(createBrandDto: CreateBrandDto): Promise<Brand> {
+    // Verificar duplicidade
+    const existingBrand = await this.brandRepository.findOne({
+      where: {
+        name: createBrandDto.name,
+      },
+    });
+
+    if (existingBrand) {
+      throw new ConflictException(
+        'Já existe uma marca cadastrada com este nome.',
+      );
+    }
+
     // Criação
     const brand = this.brandRepository.create(createBrandDto);
 
@@ -76,6 +89,20 @@ export class BrandsService {
   // Atualizar
   async update(id: number, updateBrandDto: UpdateBrandDto): Promise<Brand> {
     const brand = await this.findOne(id);
+
+    if (updateBrandDto.name !== undefined) {
+      const existingBrand = await this.brandRepository.findOne({
+        where: {
+          name: updateBrandDto.name,
+        },
+      });
+
+      if (existingBrand && existingBrand.id !== id) {
+        throw new ConflictException(
+          'Já existe uma marca cadastrada com este nome.',
+        );
+      }
+    }
 
     Object.assign(brand, updateBrandDto);
 

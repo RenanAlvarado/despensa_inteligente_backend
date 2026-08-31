@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -14,6 +18,19 @@ export class CategoriesService {
 
   // Criar Categoria
   async create(createCategoryDto: CreateCategoryDto): Promise<Category> {
+    // Verificar duplicidade
+    const existingCategory = await this.categoryRepository.findOne({
+      where: {
+        name: createCategoryDto.name,
+      },
+    });
+
+    if (existingCategory) {
+      throw new ConflictException(
+        'Já existe uma categoria cadastrada com este nome.',
+      );
+    }
+
     // Criação
     const category = this.categoryRepository.create(createCategoryDto);
 
@@ -71,12 +88,26 @@ export class CategoriesService {
     return brand;
   }
 
-  // Atualizar Categoria
+  // Atualizar categoria
   async update(
     id: number,
     updateCategoryDto: UpdateCategoryDto,
   ): Promise<Category> {
     const category = await this.findOne(id);
+
+    if (updateCategoryDto.name !== undefined) {
+      const existingCategory = await this.categoryRepository.findOne({
+        where: {
+          name: updateCategoryDto.name,
+        },
+      });
+
+      if (existingCategory && existingCategory.id !== id) {
+        throw new ConflictException(
+          'Já existe uma categoria cadastrada com este nome.',
+        );
+      }
+    }
 
     Object.assign(category, updateCategoryDto);
 

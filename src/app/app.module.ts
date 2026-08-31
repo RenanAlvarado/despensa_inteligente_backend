@@ -8,6 +8,8 @@ import { validateEnv } from '../config/env.validation';
 import { BrandsModule } from '../modules/brands/brands.module';
 import { CategoriesModule } from '../modules/categories/categories.module';
 import { ProductsModule } from '../modules/products/products.module';
+import { UsersModule } from '../modules/users/users.module';
+import { AuthModule } from '../modules/auth/auth.module';
 
 @Module({
   imports: [
@@ -40,6 +42,8 @@ import { ProductsModule } from '../modules/products/products.module';
     BrandsModule,
     CategoriesModule,
     ProductsModule,
+    UsersModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],

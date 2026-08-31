@@ -15,6 +15,17 @@ export function validateEnv(config: Record<string, unknown>) {
     DB_PASSWORD: z.string().min(1, 'DB_PASSWORD is required'),
 
     DB_NAME: z.string().min(1, 'DB_NAME is required'),
+
+    JWT_SECRET: z
+      .string()
+      .min(32, 'JWT_SECRET deve possuir pelo menos 32 caracteres'),
+
+    JWT_EXPIRES_IN: z
+      .string()
+      .regex(
+        /^\d+(s|m|h|d|w|y)$/,
+        'JWT_EXPIRES_IN deve possuir um formato válido, como 1h, 1d ou 7d',
+      ),
   });
 
   const result = envSchema.safeParse(config);

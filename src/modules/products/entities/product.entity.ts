@@ -10,6 +10,7 @@ import {
 import { Brand } from '../../brands/entities/brand.entity';
 import { Category } from '../../categories/entities/category.entity';
 import { UnitType } from '../../../common/enums/unit-type.enum';
+import { ProductSource } from '../enums/products.enum';
 
 @Entity('products')
 export class Product {
@@ -54,6 +55,12 @@ export class Product {
     type: 'int',
   })
   unitQuantity!: number;
+
+  @Column({
+    type: 'enum',
+    enum: ProductSource,
+  })
+  source!: ProductSource;
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt!: Date;

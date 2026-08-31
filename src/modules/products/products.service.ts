@@ -14,6 +14,7 @@ import { BrandsService } from '../brands/brands.service';
 import { CategoriesService } from '../categories/categories.service';
 import { OpenFoodFactsService } from '../open-food-facts/open-food-facts.service';
 import { CreateProductByBarcodeDto } from './dto/create-product-barcode.dto';
+import { ProductSource } from './enums/products.enum';
 
 @Injectable()
 export class ProductsService {
@@ -46,6 +47,7 @@ export class ProductsService {
       imageUrl: createProductManualDto.imageUrl ?? null,
       unitType: createProductManualDto.unitType,
       unitQuantity: createProductManualDto.unitQuantity,
+      source: ProductSource.MANUAL,
     });
 
     return this.productRepository.save(product);
@@ -81,6 +83,7 @@ export class ProductsService {
       imageUrl: externalProduct.imageUrl,
       unitType: externalProduct.unit,
       unitQuantity: externalProduct.quantity,
+      source: ProductSource.OPEN_FOOD_FACTS,
     });
 
     // Salvar produto
@@ -114,12 +117,54 @@ export class ProductsService {
     return product;
   }
 
-  // Atualizar Categoria
+  // Atualizar Produto
   async update(
     id: number,
     updateProductDto: UpdateProductDto,
   ): Promise<Product> {
     const product = await this.findOne(id);
+
+    if (product.source === ProductSource.OPEN_FOOD_FACTS) {
+      return this.updateExternalProduct(product, updateProductDto);
+    }
+
+    return this.updateManualProduct(product, updateProductDto);
+  }
+
+  private async updateExternalProduct(
+    product: Product,
+    updateProductDto: UpdateProductDto,
+  ): Promise<Product> {
+    const allowedFields = ['imageUrl'];
+
+    const receivedFields = Object.keys(updateProductDto);
+
+    const invalidFields = receivedFields.filter(
+      (field) => !allowedFields.includes(field),
+    );
+
+    if (invalidFields.length > 0) {
+      throw new BadRequestException(
+        'Produtos provenientes da API externa só podem ter a imagem alterada.',
+      );
+    }
+
+    if (updateProductDto.imageUrl !== undefined) {
+      product.imageUrl = updateProductDto.imageUrl;
+    }
+
+    return this.productRepository.save(product);
+  }
+
+  private async updateManualProduct(
+    product: Product,
+    updateProductDto: UpdateProductDto,
+  ): Promise<Product> {
+    if (updateProductDto.barcode !== undefined) {
+      throw new BadRequestException(
+        'O código de barras não pode ser alterado.',
+      );
+    }
 
     await this.validateRelations(
       updateProductDto.brandId,
