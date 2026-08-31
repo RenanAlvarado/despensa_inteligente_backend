@@ -16,5 +16,6 @@ import { OpenFoodFactsModule } from '../open-food-facts/open-food-facts.module';
   ],
   controllers: [ProductsController],
   providers: [ProductsService],
+  exports: [ProductsService],
 })
 export class ProductsModule {}
