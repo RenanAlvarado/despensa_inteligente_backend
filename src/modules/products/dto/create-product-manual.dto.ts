@@ -11,20 +11,22 @@ import {
 
 import { UnitType } from '../../../common/enums/unit-type.enum';
 
-export class CreateProductDto {
+export class CreateProductManualDto {
   @IsInt({ message: 'ID da marca deve ser um inteiro' })
   @Min(1, { message: 'ID da marca deve ser no mínimo 1' })
+  @IsNotEmpty({ message: 'ID da Marca é Obrigatório' })
   brandId!: number;
 
   @IsInt({ message: 'ID da categoria deve ser um inteiro' })
   @Min(1, { message: 'ID da categoria deve ser no mínimo 1' })
+  @IsNotEmpty({ message: 'ID da Categoria é Obrigatório' })
   categoryId!: number;
 
   @IsString({ message: 'Nome do Produto deve ser uma String' })
-  @IsNotEmpty({ message: 'Nome do Produto é Obrigatório' })
   @MaxLength(150, {
     message: 'Nome do Produto pode ter no máximo 150 caractéres',
   })
+  @IsNotEmpty({ message: 'Nome do Produto é Obrigatório' })
   name!: string;
 
   @IsOptional()
@@ -34,19 +36,22 @@ export class CreateProductDto {
   })
   barcode?: string;
 
+  @IsOptional()
   @IsString({ message: 'URL da Imagem deve ser String' })
   @IsUrl(undefined, { message: 'URL Inválida' })
   @MaxLength(500, {
     message: 'URL da Imagem deve ter no máximo 500 caractéres',
   })
-  imageUrl!: string;
+  imageUrl?: string;
 
   @IsEnum(UnitType, {
     message: 'Tipo de Unidade não aceito, apenas: KG, L, UN',
   })
+  @IsNotEmpty({ message: 'Tipo da Unidade é Obrigatório' })
   unitType!: UnitType;
 
   @IsInt({ message: 'Quantidade da unidade ser Inteiro' })
   @Min(1, { message: 'Quantidade da unidade deve ser no mínimo 1' })
+  @IsNotEmpty({ message: 'Quantidade é Obrigatório' })
   unitQuantity!: number;
 }

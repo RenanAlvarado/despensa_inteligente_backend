@@ -11,24 +11,24 @@ import {
   Query,
 } from '@nestjs/common';
 import { ProductsService } from './products.service';
-import { CreateProductDto } from './dto/create-product.dto';
+import { CreateProductManualDto } from './dto/create-product-manual.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ParseIdPipe } from '../../common/pipes/parse-id.pipe';
-import { ProductCreateType } from './enums/products.enum';
 import { CreateProductByBarcodeDto } from './dto/create-product-barcode.dto';
-import { Product } from './entities/product.entity';
 
 @Controller('products')
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   // Criar Produto
-  @Post()
-  create(
-    @Query('type') type: ProductCreateType,
-    @Body() body: CreateProductDto | CreateProductByBarcodeDto,
-  ): Promise<Product> {
-    return this.productsService.create(type, body);
+  @Post('manual')
+  createManual(@Body() body: CreateProductManualDto) {
+    return this.productsService.createManual(body);
+  }
+
+  @Post('barcode')
+  createByBarcode(@Body() body: CreateProductByBarcodeDto) {
+    return this.productsService.createByBarcode(body);
   }
 
   // Listar Todos ou Filtrar

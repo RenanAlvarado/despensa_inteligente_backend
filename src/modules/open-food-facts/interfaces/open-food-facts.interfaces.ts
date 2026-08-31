@@ -40,7 +40,7 @@ export interface CompleteExternalProductData {
   name: string;
   brand: string;
   category: string;
-  imageUrl: string;
+  imageUrl: string | null;
   quantity: number;
   unit: UnitType;
 }

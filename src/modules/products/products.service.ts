@@ -1,6 +1,11 @@
 // Imports
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { CreateProductDto } from './dto/create-product.dto';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { CreateProductManualDto } from './dto/create-product-manual.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Product } from './entities/product.entity';
@@ -8,7 +13,6 @@ import { Repository } from 'typeorm';
 import { BrandsService } from '../brands/brands.service';
 import { CategoriesService } from '../categories/categories.service';
 import { OpenFoodFactsService } from '../open-food-facts/open-food-facts.service';
-import { ProductCreateType } from './enums/products.enum';
 import { CreateProductByBarcodeDto } from './dto/create-product-barcode.dto';
 
 @Injectable()
@@ -21,38 +25,41 @@ export class ProductsService {
     private readonly openFoodFactsService: OpenFoodFactsService,
   ) {}
 
-  // Criar Produto
-  async create(
-    type: ProductCreateType,
-    body: CreateProductDto | CreateProductByBarcodeDto,
-  ): Promise<Product> {
-    if (type === ProductCreateType.BARCODE) {
-      return this.createByBarcode(body as CreateProductByBarcodeDto);
-    }
-
-    return this.createManual(body as CreateProductDto);
-  }
   // Cadastro Manual de Produtos
-  private async createManual(
-    createProductDto: CreateProductDto,
+  async createManual(
+    createProductManualDto: CreateProductManualDto,
   ): Promise<Product> {
     await this.validateRelations(
-      createProductDto.brandId,
-      createProductDto.categoryId,
+      createProductManualDto.brandId,
+      createProductManualDto.categoryId,
     );
 
-    const product = this.productRepository.create(createProductDto);
+    if (createProductManualDto.barcode) {
+      await this.validateBarcode(createProductManualDto.barcode);
+    }
+
+    const product = this.productRepository.create({
+      brandId: createProductManualDto.brandId,
+      categoryId: createProductManualDto.categoryId,
+      name: createProductManualDto.name,
+      barcode: createProductManualDto.barcode ?? null,
+      imageUrl: createProductManualDto.imageUrl ?? null,
+      unitType: createProductManualDto.unitType,
+      unitQuantity: createProductManualDto.unitQuantity,
+    });
 
     return this.productRepository.save(product);
   }
 
-  private async createByBarcode(
-    createProductDto: CreateProductByBarcodeDto,
+  async createByBarcode(
+    createProductByBarcodeDto: CreateProductByBarcodeDto,
   ): Promise<Product> {
+    // Validar repetição
+    await this.validateBarcode(createProductByBarcodeDto.barcode);
     // Buscar produto na API externa
     const externalProduct =
       await this.openFoodFactsService.findProductByBarcode(
-        createProductDto.barcode,
+        createProductByBarcodeDto.barcode,
       );
 
     // Buscar ou criar marca
@@ -75,9 +82,6 @@ export class ProductsService {
       unitType: externalProduct.unit,
       unitQuantity: externalProduct.quantity,
     });
-
-    console.log('Produto antes de salvar:', product);
-    console.log('UnitType:', product.unitType);
 
     // Salvar produto
     return this.productRepository.save(product);
@@ -145,6 +149,25 @@ export class ProductsService {
 
     if (categoryId !== undefined) {
       await this.categoriesService.findOne(categoryId);
+    }
+  }
+
+  // Verificar Código de Barras
+  private async validateBarcode(barcode: string): Promise<void> {
+    if (!/^\d{13}$/.test(barcode)) {
+      throw new BadRequestException(
+        'O código de barras deve conter exatamente 13 dígitos.',
+      );
+    }
+
+    const product = await this.productRepository.findOneBy({
+      barcode,
+    });
+
+    if (product) {
+      throw new ConflictException(
+        'Já existe um produto cadastrado com este código de barras.',
+      );
     }
   }
 }

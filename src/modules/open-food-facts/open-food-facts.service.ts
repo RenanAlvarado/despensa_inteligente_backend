@@ -131,12 +131,6 @@ export class OpenFoodFactsService {
       );
     }
 
-    if (!product.imageUrl) {
-      throw new BadRequestException(
-        'A API externa não retornou uma imagem para o produto.',
-      );
-    }
-
     if (product.quantity === null) {
       throw new BadRequestException(
         'A API externa não retornou a quantidade do produto.',

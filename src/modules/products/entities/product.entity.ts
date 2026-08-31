@@ -37,9 +37,10 @@ export class Product {
   @Column({
     name: 'image_url',
     type: 'varchar',
+    nullable: true,
     length: 500,
   })
-  imageUrl!: string;
+  imageUrl!: string | null;
 
   @Column({
     name: 'unit_type',
