@@ -11,6 +11,11 @@ import { EntityManager, Repository } from 'typeorm';
 import { UsersService } from '../users/users.service';
 import { ProductsService } from '../products/products.service';
 
+// Retorno de dados
+type BatchWithTotalValue = Batch & {
+  totalValue: number;
+};
+
 @Injectable()
 export class BatchesService {
   constructor(
@@ -43,16 +48,21 @@ export class BatchesService {
   }
 
   // Buscar todos
-  async findAll(userId: number): Promise<Batch[]> {
-    return this.batchRepository.find({
+  async findAll(userId: number): Promise<BatchWithTotalValue[]> {
+    const batches = await this.batchRepository.find({
       where: {
         userId,
       },
     });
+
+    return batches.map((batch) => ({
+      ...batch,
+      totalValue: this.calculateTotalValue(batch),
+    }));
   }
 
   // Buscar Lote pelo ID (Deve ser do usuário)
-  async findOne(id: number, userId: number): Promise<Batch> {
+  async findOne(id: number, userId: number): Promise<BatchWithTotalValue> {
     const batch = await this.batchRepository.findOne({
       where: {
         id,
@@ -64,7 +74,10 @@ export class BatchesService {
       throw new NotFoundException('Lote não encontrado.');
     }
 
-    return batch;
+    return {
+      ...batch,
+      totalValue: this.calculateTotalValue(batch),
+    };
   }
 
   // Atualizar Lote
@@ -114,5 +127,10 @@ export class BatchesService {
     const batch = await this.findOne(id, userId);
 
     await this.batchRepository.remove(batch);
+  }
+
+  // Valor total dos produtos
+  private calculateTotalValue(batch: Batch): number {
+    return batch.quantity * Number(batch.unitPrice);
   }
 }
