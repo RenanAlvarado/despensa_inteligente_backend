@@ -10,7 +10,6 @@ export class AppValidationPipe extends NestValidationPipe {
   constructor() {
     super({
       whitelist: true,
-      forbidNonWhitelisted: true,
       transform: true,
       stopAtFirstError: true,
 

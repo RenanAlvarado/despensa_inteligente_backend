@@ -10,5 +10,6 @@ import { ProductsModule } from '../products/products.module';
   imports: [TypeOrmModule.forFeature([Batch]), UsersModule, ProductsModule],
   controllers: [BatchesController],
   providers: [BatchesService],
+  exports: [BatchesService],
 })
 export class BatchesModule {}

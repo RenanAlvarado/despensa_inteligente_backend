@@ -11,13 +11,13 @@ import { ProductsModule } from '../modules/products/products.module';
 import { UsersModule } from '../modules/users/users.module';
 import { AuthModule } from '../modules/auth/auth.module';
 import { BatchesModule } from '../modules/batches/batches.module';
+import { BatchMovementsModule } from '../modules/batch-movements/batch-movements.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
-      // Permitido de forma global sem precisar importar
       isGlobal: true,
-      // Validação se todas as variáveis chegaram
+
       validate: validateEnv,
     }),
 
@@ -46,6 +46,7 @@ import { BatchesModule } from '../modules/batches/batches.module';
     UsersModule,
     AuthModule,
     BatchesModule,
+    BatchMovementsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -4,6 +4,7 @@ import {
   IsNotEmpty,
   IsOptional,
   IsString,
+  Matches,
   MaxLength,
   Min,
 } from 'class-validator';
@@ -53,6 +54,10 @@ export class CreateBatchDto {
   })
   quantity!: number;
 
+  @Matches(/^\d+(\.\d{1,2})?$/, {
+    message:
+      'Preço unitário deve ser um valor positivo com até 2 casas decimais.',
+  })
   @IsNotEmpty({
     message: 'Preço unitário é obrigatório.',
   })

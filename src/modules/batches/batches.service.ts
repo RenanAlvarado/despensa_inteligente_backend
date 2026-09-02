@@ -1,9 +1,13 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { CreateBatchDto } from './dto/create-batch.dto';
 import { UpdateBatchDto } from './dto/update-batch.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Batch } from './entities/batch.entity';
-import { Repository } from 'typeorm';
+import { EntityManager, Repository } from 'typeorm';
 import { UsersService } from '../users/users.service';
 import { ProductsService } from '../products/products.service';
 
@@ -63,11 +67,52 @@ export class BatchesService {
     return batch;
   }
 
-  update(id: number, updateBatchDto: UpdateBatchDto) {
-    return `This action updates a #${id} batch`;
+  // Atualizar Lote
+  async update(
+    id: number,
+    userId: number,
+    updateBatchDto: UpdateBatchDto,
+  ): Promise<Batch> {
+    const batch = await this.findOne(id, userId);
+
+    Object.assign(batch, {
+      ...updateBatchDto,
+      expirationDate:
+        updateBatchDto.expirationDate !== undefined
+          ? new Date(updateBatchDto.expirationDate)
+          : batch.expirationDate,
+      purchaseDate:
+        updateBatchDto.purchaseDate !== undefined
+          ? new Date(updateBatchDto.purchaseDate)
+          : batch.purchaseDate,
+    });
+
+    return this.batchRepository.save(batch);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} batch`;
+  // Mudar quantidade
+  async alterQuantity(
+    manager: EntityManager,
+    batch: Batch,
+    quantity: number,
+  ): Promise<Batch> {
+    const newQuantity = batch.quantity + quantity;
+
+    if (newQuantity < 0) {
+      throw new BadRequestException(
+        'A quantidade do lote não pode ser negativa.',
+      );
+    }
+
+    batch.quantity = newQuantity;
+
+    return manager.save(Batch, batch);
+  }
+
+  // Excluir Lote
+  async remove(id: number, userId: number): Promise<void> {
+    const batch = await this.findOne(id, userId);
+
+    await this.batchRepository.remove(batch);
   }
 }
