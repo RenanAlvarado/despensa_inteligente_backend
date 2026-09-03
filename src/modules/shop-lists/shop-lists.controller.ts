@@ -3,11 +3,13 @@ import {
   Get,
   Post,
   Body,
-  Patch,
   Param,
   Delete,
   UseGuards,
   Req,
+  Put,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { ShopListsService } from './shop-lists.service';
 import { CreateShopListDto } from './dto/create-shop-list.dto';
@@ -48,16 +50,25 @@ export class ShopListsController {
     return this.shopListsService.findOne(id, userId);
   }
 
-  @Patch(':id')
+  @Put(':id')
   update(
-    @Param('id') id: string,
+    @Param('id', ParseIdPipe) id: number,
+    @Req() request: AuthenticatedRequest,
     @Body() updateShopListDto: UpdateShopListDto,
   ) {
-    return this.shopListsService.update(+id, updateShopListDto);
+    const userId = request.user.sub;
+
+    return this.shopListsService.update(id, userId, updateShopListDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.shopListsService.remove(+id);
+  @HttpCode(HttpStatus.NO_CONTENT)
+  remove(
+    @Param('id', ParseIdPipe) id: number,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    const userId = request.user.sub;
+
+    return this.shopListsService.remove(id, userId);
   }
 }

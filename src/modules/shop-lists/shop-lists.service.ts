@@ -66,11 +66,36 @@ export class ShopListsService {
     return shoppingList;
   }
 
-  update(id: number, updateShopListDto: UpdateShopListDto) {
-    return `This action updates a #${id} shopList`;
+  // Atualizar Lista
+  async update(
+    id: number,
+    userId: number,
+    updateShopListDto: UpdateShopListDto,
+  ): Promise<ShoppingList> {
+    const shoppingList = await this.findOne(id, userId);
+
+    if (updateShopListDto.name !== undefined) {
+      shoppingList.name = updateShopListDto.name;
+    }
+
+    if (updateShopListDto.budgetLimit !== undefined) {
+      shoppingList.budgetLimit =
+        updateShopListDto.budgetLimit !== null
+          ? String(updateShopListDto.budgetLimit)
+          : null;
+    }
+
+    if (updateShopListDto.status !== undefined) {
+      shoppingList.status = updateShopListDto.status;
+    }
+
+    return this.shoppingListRepository.save(shoppingList);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} shopList`;
+  // Excluir Lista
+  async remove(id: number, userId: number): Promise<void> {
+    const shoppingList = await this.findOne(id, userId);
+
+    await this.shoppingListRepository.remove(shoppingList);
   }
 }
