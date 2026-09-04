@@ -1,6 +1,6 @@
 import { PartialType } from '@nestjs/mapped-types';
 import { CreateShopListItemDto } from './create-shop-list-item.dto';
-import { IsNumber, IsOptional, Min } from 'class-validator';
+import { IsInt, IsNumber, IsOptional, Min } from 'class-validator';
 
 export class UpdateShopListItemDto extends PartialType(CreateShopListItemDto) {
   @IsNumber(
@@ -14,4 +14,13 @@ export class UpdateShopListItemDto extends PartialType(CreateShopListItemDto) {
   })
   @IsOptional()
   unitPrice?: number;
+
+  @Min(0, {
+    message: 'A quantidade comprada não pode ser negativa.',
+  })
+  @IsInt({
+    message: 'A quantidade comprada precisa ser um número inteiro.',
+  })
+  @IsOptional()
+  purchasedQuantity?: number;
 }

@@ -3,11 +3,13 @@ import {
   Get,
   Post,
   Body,
-  Patch,
   Param,
   Delete,
   Req,
   UseGuards,
+  Put,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { ShopListItemsService } from './shop-list-items.service';
 import { CreateShopListItemDto } from './dto/create-shop-list-item.dto';
@@ -16,7 +18,7 @@ import { ParseIdPipe } from '../../common/pipes/parse-id.pipe';
 import type { AuthenticatedRequest } from '../../common/types/authenticated-request.type';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
-@Controller('shop-list-items')
+@Controller('shop-lists/:shopListId/items')
 @UseGuards(JwtAuthGuard)
 export class ShopListItemsController {
   constructor(private readonly shopListItemsService: ShopListItemsService) {}
@@ -37,25 +39,52 @@ export class ShopListItemsController {
   }
 
   @Get()
-  findAll() {
-    return this.shopListItemsService.findAll();
+  findAll(
+    @Param('shopListId', ParseIdPipe) shopListId: number,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    const userId = request.user.sub;
+
+    return this.shopListItemsService.findAll(shopListId, userId);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.shopListItemsService.findOne(+id);
+  findOne(
+    @Param('shopListId', ParseIdPipe) shopListId: number,
+    @Param('id', ParseIdPipe) id: number,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    const userId = request.user.sub;
+
+    return this.shopListItemsService.findOne(id, shopListId, userId);
   }
 
-  @Patch(':id')
+  @Put(':id')
   update(
-    @Param('id') id: string,
+    @Param('shopListId', ParseIdPipe) shopListId: number,
+    @Param('id', ParseIdPipe) id: number,
+    @Req() request: AuthenticatedRequest,
     @Body() updateShopListItemDto: UpdateShopListItemDto,
   ) {
-    return this.shopListItemsService.update(+id, updateShopListItemDto);
+    const userId = request.user.sub;
+
+    return this.shopListItemsService.update(
+      id,
+      shopListId,
+      userId,
+      updateShopListItemDto,
+    );
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.shopListItemsService.remove(+id);
+  @HttpCode(HttpStatus.NO_CONTENT)
+  remove(
+    @Param('shopListId', ParseIdPipe) shopListId: number,
+    @Param('id', ParseIdPipe) id: number,
+    @Req() request: AuthenticatedRequest,
+  ) {
+    const userId = request.user.sub;
+
+    return this.shopListItemsService.remove(id, shopListId, userId);
   }
 }

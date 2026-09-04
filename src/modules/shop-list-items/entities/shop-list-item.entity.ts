@@ -5,6 +5,7 @@ import {
   JoinColumn,
   ManyToOne,
   PrimaryGeneratedColumn,
+  Unique,
   UpdateDateColumn,
 } from 'typeorm';
 
@@ -13,6 +14,7 @@ import { Product } from '../../products/entities/product.entity';
 import { ShoppingListItemStatus } from '../enums/shop-list-item.enum';
 
 @Entity('shopping_list_items')
+@Unique('UQ_shopping_list_product', ['shoppingListId', 'productId'])
 export class ShopListItem {
   @PrimaryGeneratedColumn()
   id!: number;
