@@ -13,6 +13,7 @@ import { AuthModule } from '../modules/auth/auth.module';
 import { BatchesModule } from '../modules/batches/batches.module';
 import { BatchMovementsModule } from '../modules/batch-movements/batch-movements.module';
 import { ShopListsModule } from '../modules/shop-lists/shop-lists.module';
+import { ShopListItemsModule } from '../modules/shop-list-items/shop-list-items.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { ShopListsModule } from '../modules/shop-lists/shop-lists.module';
     BatchesModule,
     BatchMovementsModule,
     ShopListsModule,
+    ShopListItemsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

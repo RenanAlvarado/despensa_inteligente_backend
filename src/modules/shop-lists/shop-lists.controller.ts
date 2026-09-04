@@ -10,6 +10,7 @@ import {
   Put,
   HttpCode,
   HttpStatus,
+  Query,
 } from '@nestjs/common';
 import { ShopListsService } from './shop-lists.service';
 import { CreateShopListDto } from './dto/create-shop-list.dto';
@@ -34,10 +35,10 @@ export class ShopListsController {
   }
 
   @Get()
-  findAll(@Req() request: AuthenticatedRequest) {
+  findAll(@Req() request: AuthenticatedRequest, @Query('name') name?: string) {
     const userId = request.user.sub;
 
-    return this.shopListsService.findAll(userId);
+    return this.shopListsService.findAll(userId, name);
   }
 
   @Get(':id')

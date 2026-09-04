@@ -37,17 +37,20 @@ export class ShopListsService {
   }
 
   // Buscar todos
-  async findAll(userId: number): Promise<ShoppingList[]> {
-    const shoppingLists = await this.shoppingListRepository.find({
-      where: {
+  async findAll(userId: number, name?: string): Promise<ShoppingList[]> {
+    const query = this.shoppingListRepository
+      .createQueryBuilder('shopList')
+      .where('shopList.userId = :userId', {
         userId,
-      },
-      order: {
-        createdAt: 'DESC',
-      },
-    });
+      });
 
-    return shoppingLists;
+    if (name) {
+      query.andWhere('shopList.name LIKE :name', {
+        name: `%${name}%`,
+      });
+    }
+
+    return query.orderBy('shopList.createdAt', 'DESC').getMany();
   }
 
   // Buscar Lista por ID
