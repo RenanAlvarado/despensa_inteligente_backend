@@ -3,6 +3,8 @@ import { z } from 'zod';
 
 export function validateEnv(config: Record<string, unknown>) {
   const envSchema = z.object({
+    PORT: z.coerce.number().int().positive('PORT deve ser um número positivo'),
+
     DB_HOST: z.string().min(1, 'DB_HOST is required'),
 
     DB_PORT: z.coerce
@@ -26,6 +28,18 @@ export function validateEnv(config: Record<string, unknown>) {
         /^\d+(s|m|h|d|w|y)$/,
         'JWT_EXPIRES_IN deve possuir um formato válido, como 1h, 1d ou 7d',
       ),
+
+    CORS_ORIGIN: z.string().url('CORS_ORIGIN deve ser uma URL válida'),
+
+    THROTTLE_TTL: z.coerce
+      .number()
+      .int()
+      .positive('THROTTLE_TTL deve ser um número positivo'),
+
+    THROTTLE_LIMIT: z.coerce
+      .number()
+      .int()
+      .positive('THROTTLE_LIMIT deve ser um número positivo'),
   });
 
   const result = envSchema.safeParse(config);

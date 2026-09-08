@@ -3,7 +3,6 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User } from './entities/user.entity';
@@ -21,8 +20,8 @@ export class UsersService {
   ) {}
 
   // Criar
-  async create(createUserDto: CreateUserDto): Promise<SafeUser> {
-    const existingUser = await this.findByEmail(createUserDto.email);
+  async create(email: string, password: string): Promise<SafeUser> {
+    const existingUser = await this.findByEmail(email);
 
     if (existingUser) {
       throw new ConflictException(
@@ -30,10 +29,10 @@ export class UsersService {
       );
     }
 
-    const passwordHash = await bcrypt.hash(createUserDto.password, 10);
+    const passwordHash = await bcrypt.hash(password, 10);
 
     const user = this.userRepository.create({
-      email: createUserDto.email,
+      email,
       passwordHash,
     });
 
@@ -68,27 +67,24 @@ export class UsersService {
   }
 
   // Atualizar
-  async update(id: number, updateUserDto: UpdateUserDto): Promise<SafeUser> {
-    const user = await this.userRepository.findOneBy({ id });
-
-    if (!user) {
-      throw new NotFoundException('Usuário não encontrado');
-    }
+  async update(
+    userId: number,
+    updateUserDto: UpdateUserDto,
+  ): Promise<{ message: string }> {
+    const user = await this.findOneEntity(userId);
 
     user.passwordHash = await bcrypt.hash(updateUserDto.password, 10);
 
-    const updatedUser = await this.userRepository.save(user);
+    await this.userRepository.save(user);
 
-    return this.removePasswordHash(updatedUser);
+    return {
+      message: 'Senha atualizada com sucesso.',
+    };
   }
 
   // Excluir
-  async remove(id: number): Promise<void> {
-    const user = await this.userRepository.findOneBy({ id });
-
-    if (!user) {
-      throw new NotFoundException('Usuário não encontrado');
-    }
+  async remove(userId: number): Promise<void> {
+    const user = await this.findOneEntity(userId);
 
     await this.userRepository.remove(user);
   }
@@ -101,5 +97,16 @@ export class UsersService {
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
     };
+  }
+
+  // Busca sem Formatação
+  private async findOneEntity(id: number): Promise<User> {
+    const user = await this.userRepository.findOneBy({ id });
+
+    if (!user) {
+      throw new NotFoundException('Usuário não encontrado');
+    }
+
+    return user;
   }
 }

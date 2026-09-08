@@ -14,6 +14,9 @@ import { BatchesModule } from '../modules/batches/batches.module';
 import { BatchMovementsModule } from '../modules/batch-movements/batch-movements.module';
 import { ShopListsModule } from '../modules/shop-lists/shop-lists.module';
 import { ShopListItemsModule } from '../modules/shop-list-items/shop-list-items.module';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
+import { CustomThrottlerGuard } from '../common/guards/throttler.guard';
 
 @Module({
   imports: [
@@ -21,6 +24,22 @@ import { ShopListItemsModule } from '../modules/shop-list-items/shop-list-items.
       isGlobal: true,
 
       validate: validateEnv,
+    }),
+
+    // Rate Limiting
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+
+      inject: [ConfigService],
+
+      useFactory: (configService: ConfigService) => ({
+        throttlers: [
+          {
+            ttl: configService.getOrThrow<number>('THROTTLE_TTL'),
+            limit: configService.getOrThrow<number>('THROTTLE_LIMIT'),
+          },
+        ],
+      }),
     }),
 
     TypeOrmModule.forRootAsync({
@@ -53,6 +72,12 @@ import { ShopListItemsModule } from '../modules/shop-list-items/shop-list-items.
     ShopListItemsModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    AppService, // Rate Limiting global
+    {
+      provide: APP_GUARD,
+      useClass: CustomThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}

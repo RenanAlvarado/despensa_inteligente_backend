@@ -1,27 +1,25 @@
 import {
   Controller,
   Get,
-  Post,
   Body,
   Patch,
   Param,
   Delete,
   HttpCode,
   HttpStatus,
+  UseGuards,
+  Req,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
-import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ParseIdPipe } from '../../common/pipes/parse-id.pipe';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import type { AuthenticatedRequest } from '../../common/types/authenticated-request.type';
 
 @Controller('users')
+@UseGuards(JwtAuthGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
-
-  @Post()
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.create(createUserDto);
-  }
 
   @Get()
   findAll() {
@@ -33,17 +31,21 @@ export class UsersController {
     return this.usersService.findOne(id);
   }
 
-  @Patch(':id')
+  @Patch()
   update(
-    @Param('id', ParseIdPipe) id: number,
+    @Req() request: AuthenticatedRequest,
     @Body() updateUserDto: UpdateUserDto,
   ) {
-    return this.usersService.update(+id, updateUserDto);
+    const userId = request.user.sub;
+
+    return this.usersService.update(userId, updateUserDto);
   }
 
-  @Delete(':id')
+  @Delete()
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id', ParseIdPipe) id: number) {
-    return this.usersService.remove(+id);
+  remove(@Req() request: AuthenticatedRequest) {
+    const userId = request.user.sub;
+
+    return this.usersService.remove(userId);
   }
 }
