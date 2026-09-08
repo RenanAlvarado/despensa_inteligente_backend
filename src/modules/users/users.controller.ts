@@ -3,7 +3,6 @@ import {
   Get,
   Body,
   Patch,
-  Param,
   Delete,
   HttpCode,
   HttpStatus,
@@ -12,7 +11,6 @@ import {
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { ParseIdPipe } from '../../common/pipes/parse-id.pipe';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { AuthenticatedRequest } from '../../common/types/authenticated-request.type';
 
@@ -22,13 +20,10 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  findAll() {
-    return this.usersService.findAll();
-  }
+  findOne(@Req() request: AuthenticatedRequest) {
+    const userId = request.user.sub;
 
-  @Get(':id')
-  findOne(@Param('id', ParseIdPipe) id: number) {
-    return this.usersService.findOne(id);
+    return this.usersService.findOne(userId);
   }
 
   @Patch()

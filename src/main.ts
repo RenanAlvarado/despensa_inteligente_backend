@@ -3,11 +3,16 @@ import { AppModule } from './app/app.module';
 import { DatabaseExceptionFilter } from './common/filters/database-exception.filter';
 import { AppValidationPipe } from './common/pipes/validation.pipe';
 import { ConfigService } from '@nestjs/config';
+import helmet from 'helmet';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   const configService = app.get(ConfigService);
+
+  // Helmet
+  app.use(helmet());
 
   // CORS
   app.enableCors({
@@ -19,7 +24,10 @@ async function bootstrap() {
 
   app.useGlobalPipes(new AppValidationPipe());
 
-  app.useGlobalFilters(new DatabaseExceptionFilter());
+  app.useGlobalFilters(
+    new DatabaseExceptionFilter(),
+    new HttpExceptionFilter(),
+  );
 
   // Porta da aplicação
   const port = configService.getOrThrow<number>('PORT');

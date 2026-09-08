@@ -10,13 +10,16 @@ import {
   HttpStatus,
   Put,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { BrandsService } from './brands.service';
 import { CreateBrandDto } from './dto/create-brand.dto';
 import { UpdateBrandDto } from './dto/update-brand.dto';
 import { ParseIdPipe } from '../../common/pipes/parse-id.pipe';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('brands')
+@UseGuards(JwtAuthGuard)
 export class BrandsController {
   constructor(private readonly brandsService: BrandsService) {}
 

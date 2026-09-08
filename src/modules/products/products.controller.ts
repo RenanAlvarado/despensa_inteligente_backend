@@ -9,14 +9,17 @@ import {
   HttpCode,
   HttpStatus,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import { ProductsService } from './products.service';
 import { CreateProductManualDto } from './dto/create-product-manual.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ParseIdPipe } from '../../common/pipes/parse-id.pipe';
 import { CreateProductByBarcodeDto } from './dto/create-product-barcode.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('products')
+@UseGuards(JwtAuthGuard)
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 

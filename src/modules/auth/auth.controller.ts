@@ -1,4 +1,11 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Post,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { Throttle } from '@nestjs/throttler';
@@ -13,6 +20,11 @@ import { RegisterUserDto } from './dto/register-user.dto';
 })
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
+  @Get('test-error')
+  testError() {
+    throw new Error('TESTE DE ERRO NÃO TRATADO');
+  }
 
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
