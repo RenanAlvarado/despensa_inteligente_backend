@@ -11,6 +11,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Brand } from './entities/brand.entity';
 import { ProductsService } from '../products/products.service';
+import { FindBrandsQueryDto } from './dto/find-brands-query.dto';
+import { Order } from '../../common/enums/order-filter.enum';
 
 @Injectable()
 export class BrandsService {
@@ -68,17 +70,36 @@ export class BrandsService {
   }
 
   // Listar Todas as Marcas ou usar filtros
-  async findAll(name?: string): Promise<Brand[]> {
+  async findAll(query: FindBrandsQueryDto) {
+    const { name, page = 1, limit = 10, order = Order.ASC } = query;
+
+    const queryBuilder = this.brandRepository.createQueryBuilder('brand');
+
     if (name) {
-      return this.brandRepository
-        .createQueryBuilder('brand')
-        .where('brand.name LIKE :name', {
-          name: `%${name}%`,
-        })
-        .getMany();
+      queryBuilder.andWhere('brand.name LIKE :name', {
+        name: `%${name}%`,
+      });
     }
 
-    return this.brandRepository.find();
+    const skip = (page - 1) * limit;
+
+    queryBuilder
+      .orderBy('brand.name', order)
+      .addOrderBy('brand.id', order)
+      .skip(skip)
+      .take(limit);
+
+    const [data, total] = await queryBuilder.getManyAndCount();
+
+    return {
+      data,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   // Buscar Por ID

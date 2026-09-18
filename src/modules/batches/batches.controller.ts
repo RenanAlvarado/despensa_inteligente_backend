@@ -10,6 +10,7 @@ import {
   Put,
   HttpCode,
   HttpStatus,
+  Query,
 } from '@nestjs/common';
 import { BatchesService } from './batches.service';
 import { CreateBatchDto } from './dto/create-batch.dto';
@@ -17,6 +18,7 @@ import { UpdateBatchDto } from './dto/update-batch.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ParseIdPipe } from '../../common/pipes/parse-id.pipe';
 import type { AuthenticatedRequest } from '../../common/types/authenticated-request.type';
+import { FindBatchesQueryDto } from './dto/find-batches-query.dto';
 
 @Controller('batches')
 @UseGuards(JwtAuthGuard)
@@ -34,12 +36,13 @@ export class BatchesController {
     return this.batchesService.create(userId, createBatchDto);
   }
 
-  // Buscar Todos os Lotes do Usuário
+  // Buscar Todos os Lotes do Usuário ou aplicar filtros
   @Get()
-  findAll(@Req() request: AuthenticatedRequest) {
-    const userId = request.user.sub;
-
-    return this.batchesService.findAll(userId);
+  findAll(
+    @Req() req: AuthenticatedRequest,
+    @Query() query: FindBatchesQueryDto,
+  ) {
+    return this.batchesService.findAll(req.user.sub, query);
   }
 
   // Buscar Lote por ID

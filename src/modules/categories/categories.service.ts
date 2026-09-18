@@ -11,6 +11,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Category } from './entities/category.entity';
 import { Repository } from 'typeorm';
 import { ProductsService } from '../products/products.service';
+import { FindCategoriesQueryDto } from './dto/find-categories-query.dto';
+import { Order } from '../../common/enums/order-filter.enum';
 
 @Injectable()
 export class CategoriesService {
@@ -68,17 +70,36 @@ export class CategoriesService {
   }
 
   // Listar Todas as Marcas ou usar filtros
-  async findAll(name?: string): Promise<Category[]> {
+  async findAll(query: FindCategoriesQueryDto) {
+    const { name, page = 1, limit = 10, order = Order.ASC } = query;
+
+    const queryBuilder = this.categoryRepository.createQueryBuilder('category');
+
     if (name) {
-      return this.categoryRepository
-        .createQueryBuilder('category')
-        .where('category.name LIKE :name', {
-          name: `%${name}%`,
-        })
-        .getMany();
+      queryBuilder.andWhere('category.name LIKE :name', {
+        name: `%${name}%`,
+      });
     }
 
-    return this.categoryRepository.find();
+    const skip = (page - 1) * limit;
+
+    queryBuilder
+      .orderBy('category.name', order)
+      .addOrderBy('category.id', order)
+      .skip(skip)
+      .take(limit);
+
+    const [data, total] = await queryBuilder.getManyAndCount();
+
+    return {
+      data,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   // Buscar Por ID

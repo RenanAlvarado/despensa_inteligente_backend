@@ -12,10 +12,21 @@ import { Batch } from './entities/batch.entity';
 import { EntityManager, Repository } from 'typeorm';
 import { UsersService } from '../users/users.service';
 import { ProductsService } from '../products/products.service';
+import { FindBatchesQueryDto } from './dto/find-batches-query.dto';
+import { Order } from '../../common/enums/order-filter.enum';
+import { BatchSortBy, BatchStatus } from './enums/batches-enums.enum';
 
 // Retorno de dados
 type BatchWithTotalValue = Batch & {
   totalValue: number;
+  status: BatchStatus;
+};
+
+const sortColumnMap = {
+  [BatchSortBy.PURCHASE_DATE]: 'batch.purchaseDate',
+  [BatchSortBy.EXPIRATION_DATE]: 'batch.expirationDate',
+  [BatchSortBy.QUANTITY]: 'batch.quantity',
+  [BatchSortBy.UNIT_PRICE]: 'batch.unitPrice',
 };
 
 @Injectable()
@@ -38,11 +49,17 @@ export class BatchesService {
     // Validar produto
     await this.productsService.findOne(createBatchDto.productId);
 
+    // Validar Datas
+    const expirationDate = new Date(createBatchDto.expirationDate);
+    const purchaseDate = new Date(createBatchDto.purchaseDate);
+
+    this.validateDates(expirationDate, purchaseDate);
+
     const batch = this.batchRepository.create({
       userId,
       productId: createBatchDto.productId,
-      expirationDate: new Date(createBatchDto.expirationDate),
-      purchaseDate: new Date(createBatchDto.purchaseDate),
+      expirationDate,
+      purchaseDate,
       quantity: createBatchDto.quantity,
       unitPrice: createBatchDto.unitPrice,
       notes: createBatchDto.notes ?? null,
@@ -51,18 +68,53 @@ export class BatchesService {
     return this.batchRepository.save(batch);
   }
 
-  // Buscar todos
-  async findAll(userId: number): Promise<BatchWithTotalValue[]> {
-    const batches = await this.batchRepository.find({
-      where: {
-        userId,
-      },
-    });
+  // Buscar todos os lotes ou aplicar filtros
+  async findAll(userId: number, query: FindBatchesQueryDto) {
+    const {
+      page = 1,
+      limit = 10,
+      sortBy = BatchSortBy.PURCHASE_DATE,
+      order = Order.ASC,
+      productId,
+    } = query;
 
-    return batches.map((batch) => ({
+    const queryBuilder = this.batchRepository
+      .createQueryBuilder('batch')
+      .where('batch.userId = :userId', {
+        userId,
+      });
+
+    if (productId !== undefined) {
+      queryBuilder.andWhere('batch.productId = :productId', {
+        productId,
+      });
+    }
+
+    const skip = (page - 1) * limit;
+
+    queryBuilder
+      .orderBy(sortColumnMap[sortBy], order)
+      .addOrderBy('batch.id', order) //Desempate por ID
+      .skip(skip)
+      .take(limit);
+
+    const [batches, total] = await queryBuilder.getManyAndCount();
+
+    const data = batches.map((batch) => ({
       ...batch,
       totalValue: this.calculateTotalValue(batch),
+      status: this.calculateStatus(batch.expirationDate),
     }));
+
+    return {
+      data,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   // Buscar Lote pelo ID (Deve ser do usuário)
@@ -81,6 +133,7 @@ export class BatchesService {
     return {
       ...batch,
       totalValue: this.calculateTotalValue(batch),
+      status: this.calculateStatus(batch.expirationDate),
     };
   }
 
@@ -90,18 +143,25 @@ export class BatchesService {
     userId: number,
     updateBatchDto: UpdateBatchDto,
   ): Promise<Batch> {
+    // Validar Lote
     const batch = await this.findOne(id, userId);
+
+    const expirationDate =
+      updateBatchDto.expirationDate !== undefined
+        ? new Date(updateBatchDto.expirationDate)
+        : batch.expirationDate;
+
+    const purchaseDate =
+      updateBatchDto.purchaseDate !== undefined
+        ? new Date(updateBatchDto.purchaseDate)
+        : batch.purchaseDate;
+
+    this.validateDates(expirationDate, purchaseDate);
 
     Object.assign(batch, {
       ...updateBatchDto,
-      expirationDate:
-        updateBatchDto.expirationDate !== undefined
-          ? new Date(updateBatchDto.expirationDate)
-          : batch.expirationDate,
-      purchaseDate:
-        updateBatchDto.purchaseDate !== undefined
-          ? new Date(updateBatchDto.purchaseDate)
-          : batch.purchaseDate,
+      expirationDate,
+      purchaseDate,
     });
 
     return this.batchRepository.save(batch);
@@ -145,5 +205,38 @@ export class BatchesService {
     });
 
     return count > 0 ? count : null;
+  }
+
+  // Validação de Datas
+  private validateDates(expirationDate: Date, purchaseDate: Date): void {
+    if (purchaseDate > new Date()) {
+      throw new BadRequestException('A data de compra não pode ser futura.');
+    }
+
+    if (expirationDate < purchaseDate) {
+      throw new BadRequestException(
+        'A data de validade não pode ser anterior à data de compra.',
+      );
+    }
+  }
+
+  // Retorno de Status para o Front end
+  private calculateStatus(expirationDate: Date): BatchStatus {
+    const today = new Date();
+
+    today.setHours(0, 0, 0, 0);
+
+    const expiration = new Date(expirationDate);
+    expiration.setHours(0, 0, 0, 0);
+
+    if (expiration < today) {
+      return BatchStatus.EXPIRED;
+    }
+
+    if (expiration.getTime() === today.getTime()) {
+      return BatchStatus.EXPIRES_TODAY;
+    }
+
+    return BatchStatus.VALID;
   }
 }

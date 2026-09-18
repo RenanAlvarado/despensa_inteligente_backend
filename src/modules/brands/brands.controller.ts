@@ -17,6 +17,7 @@ import { CreateBrandDto } from './dto/create-brand.dto';
 import { UpdateBrandDto } from './dto/update-brand.dto';
 import { ParseIdPipe } from '../../common/pipes/parse-id.pipe';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { FindBrandsQueryDto } from './dto/find-brands-query.dto';
 
 @Controller('brands')
 @UseGuards(JwtAuthGuard)
@@ -31,8 +32,8 @@ export class BrandsController {
 
   // Listar Todas ou usar filtros
   @Get()
-  findAll(@Query('name') name?: string) {
-    return this.brandsService.findAll(name);
+  findAll(@Query() query: FindBrandsQueryDto) {
+    return this.brandsService.findAll(query);
   }
 
   // Buscar Por ID

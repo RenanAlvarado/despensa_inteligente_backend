@@ -16,6 +16,7 @@ import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { ParseIdPipe } from '../../common/pipes/parse-id.pipe';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { FindCategoriesQueryDto } from './dto/find-categories-query.dto';
 
 @Controller('categories')
 @UseGuards(JwtAuthGuard)
@@ -30,8 +31,8 @@ export class CategoriesController {
 
   // Listar Todas ou usar filtros
   @Get()
-  findAll(@Query('name') name?: string) {
-    return this.categoriesService.findAll(name);
+  findAll(@Query() query: FindCategoriesQueryDto) {
+    return this.categoriesService.findAll(query);
   }
 
   // Buscar Por ID

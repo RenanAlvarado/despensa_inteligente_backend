@@ -16,9 +16,11 @@ import { CategoriesService } from '../categories/categories.service';
 import { OpenFoodFactsService } from '../open-food-facts/open-food-facts.service';
 import { CreateProductByBarcodeDto } from './dto/create-product-barcode.dto';
 import { ProductSource } from './enums/products.enum';
+import { Order } from '../../common/enums/order-filter.enum';
 import { capitalizeFirstLetter } from '../../common/utils/string.util';
 import { BatchesService } from '../batches/batches.service';
 import { ShopListItemsService } from '../shop-list-items/shop-list-items.service';
+import { FindProductsQueryDto } from './dto/find-products-query.dto';
 
 @Injectable()
 export class ProductsService {
@@ -118,17 +120,54 @@ export class ProductsService {
   }
 
   // Listar todos ou filtrar
-  async findAll(name?: string): Promise<Product[]> {
+  async findAll(query: FindProductsQueryDto) {
+    const {
+      name,
+      brandId,
+      categoryId,
+      page = 1,
+      limit = 10,
+      order = Order.ASC,
+    } = query;
+
+    const queryBuilder = this.productRepository
+      .createQueryBuilder('product')
+      .leftJoinAndSelect('product.brand', 'brand')
+      .leftJoinAndSelect('product.category', 'category');
+
     if (name) {
-      return this.productRepository
-        .createQueryBuilder('product')
-        .where('product.name LIKE :name', {
-          name: `%${name}%`,
-        })
-        .getMany();
+      queryBuilder.andWhere('product.name LIKE :name', {
+        name: `%${name}%`,
+      });
     }
 
-    return this.productRepository.find();
+    if (brandId !== undefined) {
+      queryBuilder.andWhere('product.brandId = :brandId', {
+        brandId,
+      });
+    }
+
+    if (categoryId !== undefined) {
+      queryBuilder.andWhere('product.categoryId = :categoryId', {
+        categoryId,
+      });
+    }
+
+    const skip = (page - 1) * limit;
+
+    queryBuilder.orderBy('product.name', order).skip(skip).take(limit);
+
+    const [data, total] = await queryBuilder.getManyAndCount();
+
+    return {
+      data,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   // Buscar Por ID

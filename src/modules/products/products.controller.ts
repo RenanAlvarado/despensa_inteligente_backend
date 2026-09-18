@@ -17,6 +17,7 @@ import { UpdateProductDto } from './dto/update-product.dto';
 import { ParseIdPipe } from '../../common/pipes/parse-id.pipe';
 import { CreateProductByBarcodeDto } from './dto/create-product-barcode.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { FindProductsQueryDto } from './dto/find-products-query.dto';
 
 @Controller('products')
 @UseGuards(JwtAuthGuard)
@@ -36,10 +37,9 @@ export class ProductsController {
 
   // Listar Todos ou Filtrar
   @Get()
-  findAll(@Query('name') name?: string) {
-    return this.productsService.findAll(name);
+  findAll(@Query() query: FindProductsQueryDto) {
+    return this.productsService.findAll(query);
   }
-
   // Buscar Por ID
   @Get(':id')
   findOne(@Param('id', ParseIdPipe) id: string) {
