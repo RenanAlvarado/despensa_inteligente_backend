@@ -11,6 +11,7 @@ import {
 
 import { UnitType } from '../../../common/enums/unit-type.enum';
 import { Trim } from '../../../common/decorators/trim.decorator';
+import { IsValidBarcode } from '../../../common/decorators/barcode.decorator';
 
 export class CreateProductManualDto {
   @Min(1, { message: 'ID da marca deve ser no mínimo 1' })
@@ -31,11 +32,7 @@ export class CreateProductManualDto {
   @IsNotEmpty({ message: 'Nome do Produto é Obrigatório' })
   name!: string;
 
-  @MaxLength(100, {
-    message: 'Código de barras deve ter no máximo 100 caractéres',
-  })
-  @Trim()
-  @IsString({ message: 'Código de barras deve ser string' })
+  @IsValidBarcode()
   @IsOptional()
   barcode?: string;
 

@@ -1,5 +1,7 @@
 import {
   ConflictException,
+  forwardRef,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -20,6 +22,7 @@ export class ShopListItemsService {
 
     private readonly shopListsService: ShopListsService,
 
+    @Inject(forwardRef(() => ProductsService))
     private readonly productsService: ProductsService,
   ) {}
 
@@ -225,5 +228,14 @@ export class ShopListItemsService {
     }
 
     return format(item);
+  }
+
+  // Contar itens de lista de compras por produto
+  async countByProductId(productId: number): Promise<number | null> {
+    const count = await this.shopListItemRepository.countBy({
+      productId,
+    });
+
+    return count > 0 ? count : null;
   }
 }

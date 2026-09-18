@@ -38,11 +38,11 @@ export interface ExternalProductData {
 export interface CompleteExternalProductData {
   barcode: string;
   name: string;
-  brand: string;
-  category: string;
+  brand: string | null;
+  category: string | null;
   imageUrl: string | null;
-  quantity: number;
-  unit: UnitType;
+  quantity: number | null;
+  unit: UnitType | null;
 }
 
 export interface OpenFoodFactsSearchResponse {

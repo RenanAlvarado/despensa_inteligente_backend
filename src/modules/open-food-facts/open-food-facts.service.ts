@@ -78,7 +78,89 @@ export class OpenFoodFactsService {
       imageUrl: product.selected_images?.front?.display?.pt ?? null,
     };
 
-    return this.validateCompleteProduct(externalProduct);
+    return this.validateExternalProduct(externalProduct);
+  }
+
+  // Busca de Produtos opcional (Salvamento Manual)
+  async tryFindProductByBarcode(
+    barcode: string,
+  ): Promise<CompleteExternalProductData | null> {
+    try {
+      return await this.findProductByBarcode(barcode);
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        return null;
+      }
+
+      throw error;
+    }
+  }
+
+  // Verificação de Código de Barras
+  private validateBarcode(barcode: string): void {
+    if (!/^\d{13}$/.test(barcode)) {
+      throw new BadRequestException(
+        'O código de barras deve conter exatamente 13 dígitos.',
+      );
+    }
+  }
+
+  // verificar os dados de retorno
+  private validateExternalProduct(
+    product: ExternalProductData,
+  ): CompleteExternalProductData {
+    if (!product.barcode) {
+      throw new BadRequestException(
+        'A API externa não retornou um código de barras válido.',
+      );
+    }
+
+    if (!product.name) {
+      throw new BadRequestException(
+        'A API externa não retornou o nome do produto.',
+      );
+    }
+
+    return {
+      barcode: product.barcode,
+      name: product.name,
+      brand: product.brand,
+      category: product.category,
+      imageUrl: product.imageUrl,
+      quantity: product.quantity,
+      unit: product.unit ? this.tryMapUnitType(product.unit) : null,
+    };
+  }
+
+  private getFirstValue(value?: string | null): string | null {
+    return value?.split(',')[0]?.trim() || null;
+  }
+
+  // Mapeamento das unidades baseado no que pode ser aceito no banco
+  private tryMapUnitType(unit: string): UnitType | null {
+    const normalizedUnit = unit.toLowerCase().trim();
+
+    switch (normalizedUnit) {
+      case 'g':
+        return UnitType.G;
+
+      case 'kg':
+        return UnitType.KG;
+
+      case 'ml':
+        return UnitType.ML;
+
+      case 'l':
+        return UnitType.L;
+
+      case 'unit':
+      case 'units':
+      case 'un':
+        return UnitType.UN;
+
+      default:
+        return null;
+    }
   }
 
   // Buscar produtos por nome
@@ -102,65 +184,6 @@ export class OpenFoodFactsService {
     });
 
     return products.map((product) => this.mapSearchProduct(product));
-  }
-
-  private validateCompleteProduct(
-    product: ExternalProductData,
-  ): CompleteExternalProductData {
-    if (!product.barcode) {
-      throw new BadRequestException(
-        'A API externa não retornou um código de barras válido.',
-      );
-    }
-
-    if (!product.name) {
-      throw new BadRequestException(
-        'A API externa não retornou o nome do produto.',
-      );
-    }
-
-    if (!product.brand) {
-      throw new BadRequestException(
-        'A API externa não retornou a marca do produto.',
-      );
-    }
-
-    if (!product.category) {
-      throw new BadRequestException(
-        'A API externa não retornou a categoria do produto.',
-      );
-    }
-
-    if (product.quantity === null) {
-      throw new BadRequestException(
-        'A API externa não retornou a quantidade do produto.',
-      );
-    }
-
-    if (!product.unit) {
-      throw new BadRequestException(
-        'A API externa não retornou a unidade do produto.',
-      );
-    }
-
-    return {
-      barcode: product.barcode,
-      name: product.name,
-      brand: product.brand,
-      category: product.category,
-      imageUrl: product.imageUrl,
-      quantity: product.quantity,
-      unit: this.mapUnitType(product.unit),
-    };
-  }
-
-  // Verificação de Código de Barras
-  private validateBarcode(barcode: string): void {
-    if (!/^\d{13}$/.test(barcode)) {
-      throw new BadRequestException(
-        'O código de barras deve conter exatamente 13 dígitos.',
-      );
-    }
   }
 
   // Mapear produto da pesquisa
@@ -189,81 +212,23 @@ export class OpenFoodFactsService {
 
   // Método auxiliar para descobrir os produtos BR
   private getBrazilRelevance(product: OpenFoodFactsSearchProduct): number {
-    const popularityTags = product.popularity_tags ?? [];
-    const countriesTags = product.countries_tags ?? [];
+    const year = new Date().getFullYear();
+    const tags = product.popularity_tags ?? [];
 
-    const currentYear = new Date().getFullYear();
-
-    const countryTag = popularityTags.find(
-      (tag) => tag === `top-country-br-scans-${currentYear}`,
-    );
-
-    if (countryTag) {
+    if (tags.includes(`top-country-br-scans-${year}`)) {
       return 100000;
     }
 
-    const brazilTag = popularityTags.find((tag) =>
-      new RegExp(`^top-(\\d+)-br-scans-${currentYear}$`).test(tag),
+    const brazilTag = tags.find(
+      (tag) => tag.startsWith('top-') && tag.endsWith(`-br-scans-${year}`),
     );
 
     if (brazilTag) {
-      const match = brazilTag.match(
-        new RegExp(`^top-(\\d+)-br-scans-${currentYear}$`),
-      );
+      const position = Number(brazilTag.split('-')[1]);
 
-      if (match) {
-        const position = Number(match[1]);
-
-        return 100000 / position;
-      }
+      return 100000 / position;
     }
 
-    if (countriesTags.includes('en:brazil')) {
-      return 1;
-    }
-
-    return 0;
-  }
-
-  // Pegar primeiro valor da lista
-  private getFirstValue(value?: string | null): string | null {
-    if (!value) {
-      return null;
-    }
-
-    return (
-      value
-        .split(',')
-        .map((item) => item.trim())
-        .filter(Boolean)[0] ?? null
-    );
-  }
-
-  private mapUnitType(unit: string): UnitType {
-    const normalizedUnit = unit.toLowerCase().trim();
-
-    switch (normalizedUnit) {
-      case 'g':
-        return UnitType.G;
-
-      case 'kg':
-        return UnitType.KG;
-
-      case 'ml':
-        return UnitType.ML;
-
-      case 'l':
-        return UnitType.L;
-
-      case 'unit':
-      case 'units':
-      case 'un':
-        return UnitType.UN;
-
-      default:
-        throw new BadRequestException(
-          `Unidade de medida não suportada: ${unit}`,
-        );
-    }
+    return product.countries_tags?.includes('en:brazil') ? 1 : 0;
   }
 }

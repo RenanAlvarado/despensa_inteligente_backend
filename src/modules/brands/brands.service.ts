@@ -1,17 +1,25 @@
-// Imports
-import { ConflictException, Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  forwardRef,
+  Inject,
+  Injectable,
+} from '@nestjs/common';
 import { CreateBrandDto } from './dto/create-brand.dto';
 import { UpdateBrandDto } from './dto/update-brand.dto';
 import { NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Brand } from './entities/brand.entity';
+import { ProductsService } from '../products/products.service';
 
 @Injectable()
 export class BrandsService {
   constructor(
     @InjectRepository(Brand)
     private readonly brandRepository: Repository<Brand>,
+
+    @Inject(forwardRef(() => ProductsService))
+    private readonly productsService: ProductsService,
   ) {}
 
   // Criar Marca
@@ -112,6 +120,16 @@ export class BrandsService {
   // Excluir
   async remove(id: number): Promise<void> {
     const brand = await this.findOne(id);
+
+    const productCount = await this.productsService.countByBrandId(id);
+
+    if (productCount !== undefined) {
+      throw new ConflictException({
+        message:
+          'Não é possível excluir a marca, pois existem produtos cadastrados com ela.',
+        products: productCount,
+      });
+    }
 
     await this.brandRepository.remove(brand);
   }

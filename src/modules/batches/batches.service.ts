@@ -1,5 +1,7 @@
 import {
   BadRequestException,
+  forwardRef,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -23,6 +25,8 @@ export class BatchesService {
     private readonly batchRepository: Repository<Batch>,
 
     private readonly usersService: UsersService,
+
+    @Inject(forwardRef(() => ProductsService))
     private readonly productsService: ProductsService,
   ) {}
 
@@ -132,5 +136,14 @@ export class BatchesService {
   // Valor total dos produtos
   private calculateTotalValue(batch: Batch): number {
     return batch.quantity * Number(batch.unitPrice);
+  }
+
+  // Contar itens de lista de compras por produto
+  async countByProductId(productId: number): Promise<number | null> {
+    const count = await this.batchRepository.countBy({
+      productId,
+    });
+
+    return count > 0 ? count : null;
   }
 }

@@ -17,11 +17,17 @@ export class Product {
   @PrimaryGeneratedColumn()
   id!: number;
 
-  @Column({ name: 'brand_id' })
-  brandId!: number;
+  @Column({
+    name: 'brand_id',
+    nullable: true,
+  })
+  brandId!: number | null;
 
-  @Column({ name: 'category_id' })
-  categoryId!: number;
+  @Column({
+    name: 'category_id',
+    nullable: true,
+  })
+  categoryId!: number | null;
 
   @Column({ type: 'varchar', length: 150 })
   name!: string;
@@ -47,14 +53,16 @@ export class Product {
     name: 'unit_type',
     type: 'enum',
     enum: UnitType,
+    nullable: true,
   })
-  unitType!: UnitType;
+  unitType!: UnitType | null;
 
   @Column({
     name: 'unit_quantity',
     type: 'int',
+    nullable: true,
   })
-  unitQuantity!: number;
+  unitQuantity!: number | null;
 
   @Column({
     type: 'enum',

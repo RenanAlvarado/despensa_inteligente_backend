@@ -1,5 +1,7 @@
 import {
   ConflictException,
+  forwardRef,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -8,12 +10,16 @@ import { UpdateCategoryDto } from './dto/update-category.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Category } from './entities/category.entity';
 import { Repository } from 'typeorm';
+import { ProductsService } from '../products/products.service';
 
 @Injectable()
 export class CategoriesService {
   constructor(
     @InjectRepository(Category)
     private readonly categoryRepository: Repository<Category>,
+
+    @Inject(forwardRef(() => ProductsService))
+    private readonly productsService: ProductsService,
   ) {}
 
   // Criar Categoria
@@ -117,6 +123,16 @@ export class CategoriesService {
   // Excluir
   async remove(id: number): Promise<void> {
     const category = await this.findOne(id);
+
+    const productCount = await this.productsService.countByCategoryId(id);
+
+    if (productCount !== undefined) {
+      throw new ConflictException({
+        message:
+          'Não é possível excluir a categoria, pois existem produtos cadastrados com ela.',
+        products: productCount,
+      });
+    }
 
     await this.categoryRepository.remove(category);
   }
