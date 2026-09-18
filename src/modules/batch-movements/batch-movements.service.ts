@@ -9,7 +9,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { BatchesService } from '../batches/batches.service';
 import { BatchMovementConfig } from './enums/batch-movement.enums';
-import { FindBatchMovementsDto } from './dto/find-batch-movements.dto';
+import { FindBatchMovementsQueryDto } from './dto/find-batches-movements-query.dto';
+import { Order } from '../../common/enums/order-filter.enum';
 
 @Injectable()
 export class BatchMovementsService {
@@ -74,21 +75,43 @@ export class BatchMovementsService {
   async findAll(
     userId: number,
     batchId: number,
-    query: FindBatchMovementsDto,
-  ): Promise<BatchMovement[]> {
+    query: FindBatchMovementsQueryDto,
+  ) {
     await this.batchesService.findOne(batchId, userId);
 
-    return this.batchMovementRepository.find({
-      where: {
+    const { page = 1, limit = 10, type, order = Order.DESC } = query;
+
+    const queryBuilder = this.batchMovementRepository
+      .createQueryBuilder('movement')
+      .where('movement.batchId = :batchId', {
         batchId,
-        ...(query.type && {
-          type: query.type,
-        }),
+      });
+
+    if (type !== undefined) {
+      queryBuilder.andWhere('movement.type = :type', {
+        type,
+      });
+    }
+
+    const skip = (page - 1) * limit;
+
+    queryBuilder
+      .orderBy('movement.createdAt', order)
+      .addOrderBy('movement.id', order)
+      .skip(skip)
+      .take(limit);
+
+    const [movements, total] = await queryBuilder.getManyAndCount();
+
+    return {
+      data: movements,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
       },
-      order: {
-        createdAt: 'DESC',
-      },
-    });
+    };
   }
 
   // Buscar Movimentação

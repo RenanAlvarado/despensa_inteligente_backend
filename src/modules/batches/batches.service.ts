@@ -176,9 +176,10 @@ export class BatchesService {
     const newQuantity = batch.quantity + quantity;
 
     if (newQuantity < 0) {
-      throw new BadRequestException(
-        'A quantidade do lote não pode ser negativa.',
-      );
+      throw new BadRequestException({
+        message: 'A quantidade do lote não pode ser negativa.',
+        currentQuantity: batch.quantity,
+      });
     }
 
     batch.quantity = newQuantity;

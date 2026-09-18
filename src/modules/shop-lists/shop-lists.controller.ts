@@ -18,6 +18,7 @@ import { UpdateShopListDto } from './dto/update-shop-list.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { AuthenticatedRequest } from '../../common/types/authenticated-request.type';
 import { ParseIdPipe } from '../../common/pipes/parse-id.pipe';
+import { FindShopListsQueryDto } from './dto/find-shop-lists-query.dto';
 
 @Controller('shop-lists')
 @UseGuards(JwtAuthGuard)
@@ -35,10 +36,11 @@ export class ShopListsController {
   }
 
   @Get()
-  findAll(@Req() request: AuthenticatedRequest, @Query('name') name?: string) {
-    const userId = request.user.sub;
-
-    return this.shopListsService.findAll(userId, name);
+  findAll(
+    @Req() req: AuthenticatedRequest,
+    @Query() query: FindShopListsQueryDto,
+  ) {
+    return this.shopListsService.findAll(req.user.sub, query);
   }
 
   @Get(':id')

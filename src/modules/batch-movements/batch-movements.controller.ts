@@ -13,7 +13,7 @@ import { CreateBatchMovementDto } from './dto/create-batch-movement.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { ParseIdPipe } from '../../common/pipes/parse-id.pipe';
 import type { AuthenticatedRequest } from '../../common/types/authenticated-request.type';
-import { FindBatchMovementsDto } from './dto/find-batch-movements.dto';
+import { FindBatchMovementsQueryDto } from './dto/find-batches-movements-query.dto';
 
 @Controller('batches/:batchId/movements')
 @UseGuards(JwtAuthGuard)
@@ -39,7 +39,7 @@ export class BatchMovementsController {
   findAll(
     @Param('batchId', ParseIdPipe) batchId: number,
     @Req() request: AuthenticatedRequest,
-    @Query() query: FindBatchMovementsDto,
+    @Query() query: FindBatchMovementsQueryDto,
   ) {
     const userId = request.user.sub;
 

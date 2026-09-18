@@ -6,6 +6,8 @@ import { ShoppingList } from './entities/shop-list.entity';
 import { Repository } from 'typeorm';
 import { UsersService } from '../users/users.service';
 import { ShoppingListStatus } from './enums/shop-lists.enums';
+import { FindShopListsQueryDto } from './dto/find-shop-lists-query.dto';
+import { Order } from '../../common/enums/order-filter.enum';
 
 @Injectable()
 export class ShopListsService {
@@ -37,20 +39,46 @@ export class ShopListsService {
   }
 
   // Buscar todos
-  async findAll(userId: number, name?: string): Promise<ShoppingList[]> {
-    const query = this.shoppingListRepository
+  async findAll(userId: number, query: FindShopListsQueryDto) {
+    const { page = 1, limit = 10, order = Order.DESC, name, status } = query;
+
+    const queryBuilder = this.shoppingListRepository
       .createQueryBuilder('shopList')
       .where('shopList.userId = :userId', {
         userId,
       });
 
-    if (name) {
-      query.andWhere('shopList.name LIKE :name', {
+    if (name !== undefined) {
+      queryBuilder.andWhere('shopList.name LIKE :name', {
         name: `%${name}%`,
       });
     }
 
-    return query.orderBy('shopList.createdAt', 'DESC').getMany();
+    const skip = (page - 1) * limit;
+
+    queryBuilder
+      .orderBy('shopList.createdAt', order)
+      .addOrderBy('shopList.id', order)
+      .skip(skip)
+      .take(limit);
+
+    if (status !== undefined) {
+      queryBuilder.andWhere('shopList.status = :status', {
+        status,
+      });
+    }
+
+    const [shoppingLists, total] = await queryBuilder.getManyAndCount();
+
+    return {
+      data: shoppingLists,
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   // Buscar Lista por ID

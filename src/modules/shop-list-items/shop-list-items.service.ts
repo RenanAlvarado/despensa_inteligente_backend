@@ -5,13 +5,15 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { CreateShopListItemDto } from './dto/create-shop-list-item.dto';
-import { UpdateShopListItemDto } from './dto/update-shop-list-item.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ShopListItem } from './entities/shop-list-item.entity';
 import { Repository } from 'typeorm';
-import { ShopListsService } from '../shop-lists/shop-lists.service';
+import { Order } from '../../common/enums/order-filter.enum';
 import { ProductsService } from '../products/products.service';
+import { ShopListsService } from '../shop-lists/shop-lists.service';
+import { CreateShopListItemDto } from './dto/create-shop-list-item.dto';
+import { FindShopListItemsQueryDto } from './dto/find-shop-list-items-query.dto';
+import { UpdateShopListItemDto } from './dto/update-shop-list-item.dto';
+import { ShopListItem } from './entities/shop-list-item.entity';
 import { ShoppingListItemStatus } from './enums/shop-list-item.enum';
 
 @Injectable()
@@ -56,19 +58,59 @@ export class ShopListItemsService {
   }
 
   // Buscar todos os itens da lista
-  async findAll(shopListId: number, userId: number) {
+  async findAll(
+    shopListId: number,
+    userId: number,
+    query: FindShopListItemsQueryDto,
+  ) {
     await this.shopListsService.findOne(shopListId, userId);
 
-    const items = await this.shopListItemRepository.find({
-      where: {
-        shoppingListId: shopListId,
-      },
-      order: {
-        createdAt: 'DESC',
-      },
-    });
+    const {
+      page = 1,
+      limit = 10,
+      order = Order.DESC,
+      productName,
+      status,
+    } = query;
 
-    return this.formatShopListItem(items);
+    const skip = (page - 1) * limit;
+
+    const queryBuilder = this.shopListItemRepository
+      .createQueryBuilder('item')
+      .innerJoinAndSelect('item.product', 'product')
+      .where('item.shoppingListId = :shopListId', {
+        shopListId,
+      });
+
+    if (productName !== undefined) {
+      queryBuilder.andWhere('product.name LIKE :productName', {
+        productName: `%${productName}%`,
+      });
+    }
+
+    if (status !== undefined) {
+      queryBuilder.andWhere('item.status = :status', {
+        status,
+      });
+    }
+
+    queryBuilder
+      .orderBy('item.createdAt', order)
+      .addOrderBy('item.id', order)
+      .skip(skip)
+      .take(limit);
+
+    const [items, total] = await queryBuilder.getManyAndCount();
+
+    return {
+      data: this.formatShopListItem(items),
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   // Buscar Por ID
@@ -79,6 +121,9 @@ export class ShopListItemsService {
       where: {
         id,
         shoppingListId: shopListId,
+      },
+      relations: {
+        product: true,
       },
     });
 

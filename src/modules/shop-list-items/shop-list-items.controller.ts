@@ -10,6 +10,7 @@ import {
   Put,
   HttpCode,
   HttpStatus,
+  Query,
 } from '@nestjs/common';
 import { ShopListItemsService } from './shop-list-items.service';
 import { CreateShopListItemDto } from './dto/create-shop-list-item.dto';
@@ -17,6 +18,7 @@ import { UpdateShopListItemDto } from './dto/update-shop-list-item.dto';
 import { ParseIdPipe } from '../../common/pipes/parse-id.pipe';
 import type { AuthenticatedRequest } from '../../common/types/authenticated-request.type';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { FindShopListItemsQueryDto } from './dto/find-shop-list-items-query.dto';
 
 @Controller('shop-lists/:shopListId/items')
 @UseGuards(JwtAuthGuard)
@@ -40,12 +42,11 @@ export class ShopListItemsController {
 
   @Get()
   findAll(
-    @Param('shopListId', ParseIdPipe) shopListId: number,
-    @Req() request: AuthenticatedRequest,
+    @Param('shopListId', ParseIdPipe) shopListId: string,
+    @Req() req: AuthenticatedRequest,
+    @Query() query: FindShopListItemsQueryDto,
   ) {
-    const userId = request.user.sub;
-
-    return this.shopListItemsService.findAll(shopListId, userId);
+    return this.shopListItemsService.findAll(+shopListId, req.user.sub, query);
   }
 
   @Get(':id')
