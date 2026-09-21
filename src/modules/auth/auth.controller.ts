@@ -1,5 +1,6 @@
 import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import {
+  ApiConflictResponse,
   ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
@@ -27,9 +28,8 @@ export class AuthController {
     description:
       'Cria um novo usuário e realiza a autenticação automaticamente, retornando um token JWT.',
   })
-  @ApiResponse({
-    status: 409,
-    description: 'Já existe um usuário cadastrado com este e-mail.',
+  @ApiConflictResponse({
+    description: 'Já existe um usuário cadastrado com esse email.',
   })
   @ApiResponse({
     status: 429,

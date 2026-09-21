@@ -5,14 +5,14 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { CreateCategoryDto } from './dto/create-category.dto';
-import { UpdateCategoryDto } from './dto/update-category.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Category } from './entities/category.entity';
 import { Repository } from 'typeorm';
-import { ProductsService } from '../products/products.service';
-import { FindCategoriesQueryDto } from './dto/find-categories-query.dto';
 import { Order } from '../../common/enums/order-filter.enum';
+import { ProductsService } from '../products/products.service';
+import { CreateCategoryDto } from './dto/create-category.dto';
+import { FindCategoriesQueryDto } from './dto/find-categories-query.dto';
+import { UpdateCategoryDto } from './dto/update-category.dto';
+import { Category } from './entities/category.entity';
 
 @Injectable()
 export class CategoriesService {
@@ -104,15 +104,15 @@ export class CategoriesService {
 
   // Buscar Por ID
   async findOne(id: number): Promise<Category> {
-    const brand = await this.categoryRepository.findOneBy({
+    const category = await this.categoryRepository.findOneBy({
       id,
     });
 
-    if (!brand) {
+    if (!category) {
       throw new NotFoundException('Categoria não encontrada');
     }
 
-    return brand;
+    return category;
   }
 
   // Atualizar categoria

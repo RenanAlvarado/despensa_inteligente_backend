@@ -5,7 +5,7 @@ import { IsValidPassword } from '../../../common/decorators/password.decorator';
 
 export class LoginDto {
   @ApiProperty({
-    example: 'usuario@email.com',
+    example: 'testejoao5@gmail.com',
     description: 'Email utilizado para autenticação.',
   })
   @IsValidEmail()
@@ -13,7 +13,7 @@ export class LoginDto {
   email!: string;
 
   @ApiProperty({
-    example: 'Senha123!',
+    example: 'Joao123@',
     description: 'Senha do usuário.',
   })
   @IsValidPassword()

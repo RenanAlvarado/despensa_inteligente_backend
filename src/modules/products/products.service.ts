@@ -1,4 +1,3 @@
-// Imports
 import {
   ConflictException,
   forwardRef,
@@ -6,21 +5,21 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { CreateProductManualDto } from './dto/create-product-manual.dto';
-import { UpdateProductDto } from './dto/update-product.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Product } from './entities/product.entity';
 import { Repository } from 'typeorm';
-import { BrandsService } from '../brands/brands.service';
-import { CategoriesService } from '../categories/categories.service';
-import { OpenFoodFactsService } from '../open-food-facts/open-food-facts.service';
-import { CreateProductByBarcodeDto } from './dto/create-product-barcode.dto';
-import { ProductSource } from './enums/products.enum';
 import { Order } from '../../common/enums/order-filter.enum';
 import { capitalizeFirstLetter } from '../../common/utils/string.util';
 import { BatchesService } from '../batches/batches.service';
+import { BrandsService } from '../brands/brands.service';
+import { CategoriesService } from '../categories/categories.service';
+import { OpenFoodFactsService } from '../open-food-facts/open-food-facts.service';
 import { ShopListItemsService } from '../shop-list-items/shop-list-items.service';
+import { CreateProductByBarcodeDto } from './dto/create-product-barcode.dto';
+import { CreateProductManualDto } from './dto/create-product-manual.dto';
 import { FindProductsQueryDto } from './dto/find-products-query.dto';
+import { UpdateProductDto } from './dto/update-product.dto';
+import { Product } from './entities/product.entity';
+import { ProductSource } from './enums/products.enum';
 
 @Injectable()
 export class ProductsService {
@@ -155,7 +154,11 @@ export class ProductsService {
 
     const skip = (page - 1) * limit;
 
-    queryBuilder.orderBy('product.name', order).skip(skip).take(limit);
+    queryBuilder
+      .orderBy('product.name', order)
+      .addOrderBy('product.id', order)
+      .skip(skip)
+      .take(limit);
 
     const [data, total] = await queryBuilder.getManyAndCount();
 
