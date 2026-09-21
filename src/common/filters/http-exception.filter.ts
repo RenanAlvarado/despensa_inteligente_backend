@@ -40,14 +40,17 @@ export class HttpExceptionFilter implements ExceptionFilter {
 
     const userId = (request as AuthenticatedRequest).user?.sub;
 
+    const body = this.sanitizeBody(request.body);
+
     this.logger.error(
       [
         `Erro interno do servidor`,
         `Método: ${request.method}`,
-        `Rota: ${request.originalUrl}`,
+        `Rota: ${request.path}`,
         `Status: ${HttpStatus.INTERNAL_SERVER_ERROR}`,
         `IP: ${request.ip}`,
         `Usuário: ${userId ?? 'Não autenticado'}`,
+        `Body: ${JSON.stringify(body)}`,
         `Erro: ${error.message}`,
       ].join(' | '),
       error.stack,
@@ -57,5 +60,29 @@ export class HttpExceptionFilter implements ExceptionFilter {
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
       message: 'Erro interno do servidor.',
     });
+  }
+
+  private sanitizeBody(body: unknown): unknown {
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      return body;
+    }
+
+    const sanitized = { ...(body as Record<string, unknown>) };
+
+    const sensitiveFields = [
+      'password',
+      'passwordConfirmation',
+      'accessToken',
+      'refreshToken',
+      'token',
+    ];
+
+    for (const field of sensitiveFields) {
+      if (field in sanitized) {
+        sanitized[field] = '[REDACTED]';
+      }
+    }
+
+    return sanitized;
   }
 }

@@ -1,10 +1,12 @@
+import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
+import helmet from 'helmet';
 import { AppModule } from './app/app.module';
 import { DatabaseExceptionFilter } from './common/filters/database-exception.filter';
-import { AppValidationPipe } from './common/pipes/validation.pipe';
-import { ConfigService } from '@nestjs/config';
-import helmet from 'helmet';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { RequestTimingInterceptor } from './common/interceptors/request-timing.interceptor';
+import { AppValidationPipe } from './common/pipes/validation.pipe';
+import { setupSwagger } from './config/swagger.config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -29,8 +31,13 @@ async function bootstrap() {
     new HttpExceptionFilter(),
   );
 
+  app.useGlobalInterceptors(new RequestTimingInterceptor());
+
   // Porta da aplicação
   const port = configService.getOrThrow<number>('PORT');
+
+  // Swagger
+  setupSwagger(app, port);
 
   await app.listen(port);
 }

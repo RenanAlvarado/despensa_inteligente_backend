@@ -1,16 +1,17 @@
+import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import {
-  Body,
-  Controller,
-  Get,
-  HttpCode,
-  HttpStatus,
-  Post,
-} from '@nestjs/common';
+  ApiCreatedResponse,
+  ApiOkResponse,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
-import { Throttle } from '@nestjs/throttler';
 import { RegisterUserDto } from './dto/register-user.dto';
 
+@ApiTags('Autenticação')
 @Controller('auth')
 @Throttle({
   default: {
@@ -21,17 +22,54 @@ import { RegisterUserDto } from './dto/register-user.dto';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Get('test-error')
-  testError() {
-    throw new Error('TESTE DE ERRO NÃO TRATADO');
-  }
-
+  @ApiOperation({
+    summary: 'Cadastra um usuário',
+    description:
+      'Cria um novo usuário e realiza a autenticação automaticamente, retornando um token JWT.',
+  })
+  @ApiResponse({
+    status: 409,
+    description: 'Já existe um usuário cadastrado com este e-mail.',
+  })
+  @ApiResponse({
+    status: 429,
+    description: 'Excesso de chamadas.',
+  })
+  @ApiCreatedResponse({
+    description: 'Usuário cadastrado e autenticado com sucesso.',
+    schema: {
+      example: {
+        token: 'eyJhbGciOiJIUzI1NiIs...',
+      },
+    },
+  })
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   async register(@Body() registerUserDto: RegisterUserDto) {
     return this.authService.register(registerUserDto);
   }
 
+  // Login
+  @ApiOperation({
+    summary: 'Realiza login',
+    description: 'Autentica o usuário e retorna um token JWT.',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Email ou senha inválidos.',
+  })
+  @ApiResponse({
+    status: 429,
+    description: 'Excesso de chamadas',
+  })
+  @ApiOkResponse({
+    description: 'Login realizado com sucesso.',
+    schema: {
+      example: {
+        token: 'eyJhbGciOiJIUzI1NiIs...',
+      },
+    },
+  })
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(@Body() loginDto: LoginDto) {

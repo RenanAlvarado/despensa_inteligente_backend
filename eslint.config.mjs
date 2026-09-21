@@ -33,9 +33,17 @@ export default tseslint.config(
       'prettier/prettier': ['error', { endOfLine: 'auto' }],
     },
   },
-  // DTOs utilizam decorators do class-validator.
   {
-    files: ['src/**/*.dto.ts'],
+    files: ['src/config/swagger.config.ts'],
+    rules: {
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+    },
+  },
+  // DTOs e controllers utilizam decorators do class-validator.
+  {
+    files: ['src/**/*.dto.ts', 'src/**/*.controller.ts'],
 
     rules: {
       '@typescript-eslint/no-unsafe-call': 'off',
