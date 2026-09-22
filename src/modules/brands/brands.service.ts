@@ -3,16 +3,18 @@ import {
   forwardRef,
   Inject,
   Injectable,
+  NotFoundException,
 } from '@nestjs/common';
-import { CreateBrandDto } from './dto/create-brand.dto';
-import { UpdateBrandDto } from './dto/update-brand.dto';
-import { NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Brand } from './entities/brand.entity';
-import { ProductsService } from '../products/products.service';
-import { FindBrandsQueryDto } from './dto/find-brands-query.dto';
+import { PaginatedResponseDto } from '../../common/dto/paginated-response.dto';
 import { Order } from '../../common/enums/order-filter.enum';
+import { ProductsService } from '../products/products.service';
+import { BrandResponseDto } from './dto/brand-response.dto';
+import { CreateBrandDto } from './dto/create-brand.dto';
+import { FindBrandsQueryDto } from './dto/find-brands-query.dto';
+import { UpdateBrandDto } from './dto/update-brand.dto';
+import { Brand } from './entities/brand.entity';
 
 @Injectable()
 export class BrandsService {
@@ -25,25 +27,17 @@ export class BrandsService {
   ) {}
 
   // Criar Marca
-  async create(createBrandDto: CreateBrandDto): Promise<Brand> {
+  async create(createBrandDto: CreateBrandDto): Promise<BrandResponseDto> {
     // Verificar duplicidade
-    const existingBrand = await this.brandRepository.findOne({
-      where: {
-        name: createBrandDto.name,
-      },
-    });
-
-    if (existingBrand) {
-      throw new ConflictException(
-        'Já existe uma marca cadastrada com este nome.',
-      );
-    }
+    await this.checkNameDuplicate(createBrandDto.name);
 
     // Criação
     const brand = this.brandRepository.create(createBrandDto);
 
     // Retorno
-    return this.brandRepository.save(brand);
+    const savedBrand = await this.brandRepository.save(brand);
+
+    return this.toResponse(savedBrand);
   }
 
   // Busca e criação Via Nome
@@ -63,14 +57,16 @@ export class BrandsService {
     }
 
     const newBrand = this.brandRepository.create({
-      name,
+      name: normalizedName,
     });
 
     return this.brandRepository.save(newBrand);
   }
 
   // Listar Todas as Marcas ou usar filtros
-  async findAll(query: FindBrandsQueryDto) {
+  async findAll(
+    query: FindBrandsQueryDto,
+  ): Promise<PaginatedResponseDto<BrandResponseDto>> {
     const { name, page = 1, limit = 10, order = Order.ASC } = query;
 
     const queryBuilder = this.brandRepository.createQueryBuilder('brand');
@@ -92,7 +88,7 @@ export class BrandsService {
     const [data, total] = await queryBuilder.getManyAndCount();
 
     return {
-      data,
+      data: data.map((data) => this.toResponse(data)),
       meta: {
         page,
         limit,
@@ -103,7 +99,13 @@ export class BrandsService {
   }
 
   // Buscar Por ID
-  async findOne(id: number): Promise<Brand> {
+  async findOne(id: number): Promise<BrandResponseDto> {
+    const brand = await this.findOneEntity(id);
+
+    return this.toResponse(brand);
+  }
+
+  async findOneEntity(id: number): Promise<Brand> {
     const brand = await this.brandRepository.findOneBy({
       id,
     });
@@ -116,31 +118,24 @@ export class BrandsService {
   }
 
   // Atualizar
-  async update(id: number, updateBrandDto: UpdateBrandDto): Promise<Brand> {
-    const brand = await this.findOne(id);
+  async update(
+    id: number,
+    updateBrandDto: UpdateBrandDto,
+  ): Promise<BrandResponseDto> {
+    const brand = await this.findOneEntity(id);
 
-    if (updateBrandDto.name !== undefined) {
-      const existingBrand = await this.brandRepository.findOne({
-        where: {
-          name: updateBrandDto.name,
-        },
-      });
-
-      if (existingBrand && existingBrand.id !== id) {
-        throw new ConflictException(
-          'Já existe uma marca cadastrada com este nome.',
-        );
-      }
-    }
+    await this.checkNameDuplicate(updateBrandDto.name, id);
 
     Object.assign(brand, updateBrandDto);
 
-    return this.brandRepository.save(brand);
+    const savedBrand = await this.brandRepository.save(brand);
+
+    return this.toResponse(savedBrand);
   }
 
   // Excluir
   async remove(id: number): Promise<void> {
-    const brand = await this.findOne(id);
+    const brand = await this.findOneEntity(id);
 
     const productCount = await this.productsService.countByBrandId(id);
 
@@ -153,5 +148,28 @@ export class BrandsService {
     }
 
     await this.brandRepository.remove(brand);
+  }
+
+  // Colocar no padrão de resposta
+  private toResponse(brand: Brand): BrandResponseDto {
+    return {
+      id: brand.id,
+      name: brand.name,
+    };
+  }
+
+  // Verificar duplicidade
+  private async checkNameDuplicate(name: string, id?: number): Promise<void> {
+    const existingBrand = await this.brandRepository.findOne({
+      where: {
+        name,
+      },
+    });
+
+    if (existingBrand && existingBrand.id !== id) {
+      throw new ConflictException(
+        'Já existe uma marca cadastrada com este nome.',
+      );
+    }
   }
 }

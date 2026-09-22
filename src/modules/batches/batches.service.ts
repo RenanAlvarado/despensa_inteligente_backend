@@ -5,15 +5,15 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { CreateBatchDto } from './dto/create-batch.dto';
-import { UpdateBatchDto } from './dto/update-batch.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Batch } from './entities/batch.entity';
 import { EntityManager, Repository } from 'typeorm';
-import { UsersService } from '../users/users.service';
-import { ProductsService } from '../products/products.service';
-import { FindBatchesQueryDto } from './dto/find-batches-query.dto';
 import { Order } from '../../common/enums/order-filter.enum';
+import { ProductsService } from '../products/products.service';
+import { UsersService } from '../users/users.service';
+import { CreateBatchDto } from './dto/create-batch.dto';
+import { FindBatchesQueryDto } from './dto/find-batches-query.dto';
+import { UpdateBatchDto } from './dto/update-batch.dto';
+import { Batch } from './entities/batch.entity';
 import { BatchSortBy, BatchStatus } from './enums/batches-enums.enum';
 
 // Retorno de dados

@@ -22,9 +22,11 @@ import {
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
+import { ApiPaginatedResponse } from '../../common/decorators/api-paginated-response.decorator';
 import { ParseIdPipe } from '../../common/pipes/parse-id.pipe';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CategoriesService } from './categories.service';
+import { CategoryResponseDto } from './dto/category-response.dto';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { FindCategoriesQueryDto } from './dto/find-categories-query.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
@@ -58,9 +60,7 @@ export class CategoriesController {
     description:
       'Lista as categorias cadastradas com suporte a paginação e filtro por nome.',
   })
-  @ApiOkResponse({
-    description: 'Categorias encontradas com sucesso.',
-  })
+  @ApiPaginatedResponse(CategoryResponseDto)
   @Get()
   findAll(@Query() query: FindCategoriesQueryDto) {
     return this.categoriesService.findAll(query);

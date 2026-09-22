@@ -7,8 +7,10 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { PaginatedResponseDto } from '../../common/dto/paginated-response.dto';
 import { Order } from '../../common/enums/order-filter.enum';
 import { ProductsService } from '../products/products.service';
+import { CategoryResponseDto } from './dto/category-response.dto';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { FindCategoriesQueryDto } from './dto/find-categories-query.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
@@ -25,25 +27,19 @@ export class CategoriesService {
   ) {}
 
   // Criar Categoria
-  async create(createCategoryDto: CreateCategoryDto): Promise<Category> {
+  async create(
+    createCategoryDto: CreateCategoryDto,
+  ): Promise<CategoryResponseDto> {
     // Verificar duplicidade
-    const existingCategory = await this.categoryRepository.findOne({
-      where: {
-        name: createCategoryDto.name,
-      },
-    });
-
-    if (existingCategory) {
-      throw new ConflictException(
-        'Já existe uma categoria cadastrada com este nome.',
-      );
-    }
+    await this.checkNameDuplicate(createCategoryDto.name);
 
     // Criação
     const category = this.categoryRepository.create(createCategoryDto);
 
     // Retorno
-    return this.categoryRepository.save(category);
+    const savedCategory = await this.categoryRepository.save(category);
+
+    return this.toResponse(savedCategory);
   }
 
   // Busca e criação Via Nome
@@ -63,14 +59,16 @@ export class CategoriesService {
     }
 
     const newCategory = this.categoryRepository.create({
-      name,
+      name: normalizedName,
     });
 
     return this.categoryRepository.save(newCategory);
   }
 
   // Listar Todas as Marcas ou usar filtros
-  async findAll(query: FindCategoriesQueryDto) {
+  async findAll(
+    query: FindCategoriesQueryDto,
+  ): Promise<PaginatedResponseDto<CategoryResponseDto>> {
     const { name, page = 1, limit = 10, order = Order.ASC } = query;
 
     const queryBuilder = this.categoryRepository.createQueryBuilder('category');
@@ -89,10 +87,10 @@ export class CategoriesService {
       .skip(skip)
       .take(limit);
 
-    const [data, total] = await queryBuilder.getManyAndCount();
+    const [categories, total] = await queryBuilder.getManyAndCount();
 
     return {
-      data,
+      data: categories.map((category) => this.toResponse(category)),
       meta: {
         page,
         limit,
@@ -103,7 +101,13 @@ export class CategoriesService {
   }
 
   // Buscar Por ID
-  async findOne(id: number): Promise<Category> {
+  async findOne(id: number): Promise<CategoryResponseDto> {
+    const category = await this.findOneEntity(id);
+
+    return this.toResponse(category);
+  }
+
+  async findOneEntity(id: number): Promise<Category> {
     const category = await this.categoryRepository.findOneBy({
       id,
     });
@@ -119,31 +123,21 @@ export class CategoriesService {
   async update(
     id: number,
     updateCategoryDto: UpdateCategoryDto,
-  ): Promise<Category> {
-    const category = await this.findOne(id);
+  ): Promise<CategoryResponseDto> {
+    const category = await this.findOneEntity(id);
 
-    if (updateCategoryDto.name !== undefined) {
-      const existingCategory = await this.categoryRepository.findOne({
-        where: {
-          name: updateCategoryDto.name,
-        },
-      });
-
-      if (existingCategory && existingCategory.id !== id) {
-        throw new ConflictException(
-          'Já existe uma categoria cadastrada com este nome.',
-        );
-      }
-    }
+    await this.checkNameDuplicate(updateCategoryDto.name, id);
 
     Object.assign(category, updateCategoryDto);
 
-    return this.categoryRepository.save(category);
+    const savedCategory = await this.categoryRepository.save(category);
+
+    return this.toResponse(savedCategory);
   }
 
   // Excluir
   async remove(id: number): Promise<void> {
-    const category = await this.findOne(id);
+    const category = await this.findOneEntity(id);
 
     const productCount = await this.productsService.countByCategoryId(id);
 
@@ -156,5 +150,26 @@ export class CategoriesService {
     }
 
     await this.categoryRepository.remove(category);
+  }
+
+  // Padronização de Resposta
+  private toResponse(category: Category): CategoryResponseDto {
+    return {
+      id: category.id,
+      name: category.name,
+    };
+  }
+
+  // Verificar duplicidade de nome
+  private async checkNameDuplicate(name: string, id?: number): Promise<void> {
+    const existingCategory = await this.categoryRepository.findOne({
+      where: { name },
+    });
+
+    if (existingCategory && existingCategory.id !== id) {
+      throw new ConflictException(
+        'Já existe uma categoria cadastrada com este nome.',
+      );
+    }
   }
 }

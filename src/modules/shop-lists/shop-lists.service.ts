@@ -1,13 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { CreateShopListDto } from './dto/create-shop-list.dto';
-import { UpdateShopListDto } from './dto/update-shop-list.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ShoppingList } from './entities/shop-list.entity';
 import { Repository } from 'typeorm';
-import { UsersService } from '../users/users.service';
-import { ShoppingListStatus } from './enums/shop-lists.enums';
-import { FindShopListsQueryDto } from './dto/find-shop-lists-query.dto';
 import { Order } from '../../common/enums/order-filter.enum';
+import { UsersService } from '../users/users.service';
+import { CreateShopListDto } from './dto/create-shop-list.dto';
+import { FindShopListsQueryDto } from './dto/find-shop-lists-query.dto';
+import { UpdateShopListDto } from './dto/update-shop-list.dto';
+import { ShoppingList } from './entities/shop-list.entity';
+import { ShoppingListStatus } from './enums/shop-lists.enums';
 
 @Injectable()
 export class ShopListsService {
@@ -54,6 +54,12 @@ export class ShopListsService {
       });
     }
 
+    if (status !== undefined) {
+      queryBuilder.andWhere('shopList.status = :status', {
+        status,
+      });
+    }
+
     const skip = (page - 1) * limit;
 
     queryBuilder
@@ -61,12 +67,6 @@ export class ShopListsService {
       .addOrderBy('shopList.id', order)
       .skip(skip)
       .take(limit);
-
-    if (status !== undefined) {
-      queryBuilder.andWhere('shopList.status = :status', {
-        status,
-      });
-    }
 
     const [shoppingLists, total] = await queryBuilder.getManyAndCount();
 

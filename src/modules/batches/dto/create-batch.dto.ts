@@ -1,3 +1,4 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsDateString,
   IsInt,
@@ -10,6 +11,12 @@ import {
 } from 'class-validator';
 
 export class CreateBatchDto {
+  // ID do produto
+  @ApiProperty({
+    example: 1,
+    description: 'ID do produto ao qual o lote pertence.',
+    minimum: 1,
+  })
   @Min(1, {
     message: 'ID do produto deve ser no mínimo 1.',
   })
@@ -21,6 +28,12 @@ export class CreateBatchDto {
   })
   productId!: number;
 
+  // Data de Validade
+  @ApiProperty({
+    example: '2026-12-31',
+    description: 'Data de validade do lote.',
+    format: 'date',
+  })
   @IsDateString(
     {},
     {
@@ -32,6 +45,12 @@ export class CreateBatchDto {
   })
   expirationDate!: string;
 
+  // Data de compra
+  @ApiProperty({
+    example: '2026-09-21',
+    description: 'Data em que o produto foi comprado.',
+    format: 'date',
+  })
   @IsDateString(
     {},
     {
@@ -43,6 +62,12 @@ export class CreateBatchDto {
   })
   purchaseDate!: string;
 
+  // Quantidade
+  @ApiProperty({
+    example: 5,
+    description: 'Quantidade de unidades do produto no lote.',
+    minimum: 1,
+  })
   @Min(1, {
     message: 'Quantidade deve ser no mínimo 1.',
   })
@@ -54,6 +79,12 @@ export class CreateBatchDto {
   })
   quantity!: number;
 
+  // Preço unitário
+  @ApiProperty({
+    example: '12.50',
+    description:
+      'Preço unitário do produto. Deve possuir até duas casas decimais.',
+  })
   @Matches(/^\d+(\.\d{1,2})?$/, {
     message:
       'Preço unitário deve ser um valor positivo com até 2 casas decimais.',
@@ -63,6 +94,12 @@ export class CreateBatchDto {
   })
   unitPrice!: string;
 
+  // Notas
+  @ApiPropertyOptional({
+    example: 'Lote comprado em promoção.',
+    description: 'Observações adicionais sobre o lote.',
+    maxLength: 1000,
+  })
   @MaxLength(1000, {
     message: 'Notas podem ter no máximo 1000 caracteres.',
   })

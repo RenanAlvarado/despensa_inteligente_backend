@@ -7,8 +7,8 @@ import {
   HttpCode,
   HttpStatus,
   Param,
+  Patch,
   Post,
-  Put,
   Query,
   UseGuards,
 } from '@nestjs/common';
@@ -22,9 +22,11 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+import { ApiPaginatedResponse } from '../../common/decorators/api-paginated-response.decorator';
 import { ParseIdPipe } from '../../common/pipes/parse-id.pipe';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { BrandsService } from './brands.service';
+import { BrandResponseDto } from './dto/brand-response.dto';
 import { CreateBrandDto } from './dto/create-brand.dto';
 import { FindBrandsQueryDto } from './dto/find-brands-query.dto';
 import { UpdateBrandDto } from './dto/update-brand.dto';
@@ -43,6 +45,7 @@ export class BrandsController {
   })
   @ApiCreatedResponse({
     description: 'Marca criada com sucesso.',
+    type: BrandResponseDto,
   })
   @ApiConflictResponse({
     description: 'Já existe uma marca cadastrada com este nome.',
@@ -58,9 +61,7 @@ export class BrandsController {
     description:
       'Lista as marcas cadastradas com suporte a paginação e filtro por nome.',
   })
-  @ApiOkResponse({
-    description: 'Marcas encontradas com sucesso.',
-  })
+  @ApiPaginatedResponse(BrandResponseDto)
   @Get()
   findAll(@Query() query: FindBrandsQueryDto) {
     return this.brandsService.findAll(query);
@@ -73,6 +74,7 @@ export class BrandsController {
   })
   @ApiOkResponse({
     description: 'Marca encontrada com sucesso.',
+    type: BrandResponseDto,
   })
   @ApiNotFoundResponse({
     description: 'Marca não encontrada.',
@@ -89,6 +91,7 @@ export class BrandsController {
   })
   @ApiOkResponse({
     description: 'Marca atualizada com sucesso.',
+    type: BrandResponseDto,
   })
   @ApiNotFoundResponse({
     description: 'Marca não encontrada.',
@@ -96,7 +99,7 @@ export class BrandsController {
   @ApiConflictResponse({
     description: 'Já existe uma marca cadastrada com este nome.',
   })
-  @Put(':id')
+  @Patch(':id')
   update(
     @Param('id', ParseIdPipe) id: number,
     @Body() updateBrandDto: UpdateBrandDto,

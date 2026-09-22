@@ -23,11 +23,13 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { ApiPaginatedResponse } from '../../common/decorators/api-paginated-response.decorator';
 import { ParseIdPipe } from '../../common/pipes/parse-id.pipe';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateProductByBarcodeDto } from './dto/create-product-barcode.dto';
 import { CreateProductManualDto } from './dto/create-product-manual.dto';
 import { FindProductsQueryDto } from './dto/find-products-query.dto';
+import { ProductResponseDto } from './dto/product-response.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductsService } from './products.service';
 
@@ -46,6 +48,7 @@ export class ProductsController {
   })
   @ApiCreatedResponse({
     description: 'Produto criado com sucesso.',
+    type: ProductResponseDto,
   })
   @ApiConflictResponse({
     description:
@@ -64,6 +67,7 @@ export class ProductsController {
   })
   @ApiCreatedResponse({
     description: 'Produto encontrado e cadastrado com sucesso.',
+    type: ProductResponseDto,
   })
   @ApiConflictResponse({
     description: 'Já existe um produto cadastrado com este código de barras.',
@@ -87,9 +91,7 @@ export class ProductsController {
     description:
       'Lista os produtos cadastrados com suporte a paginação e filtros por nome, marca e categoria.',
   })
-  @ApiOkResponse({
-    description: 'Produtos encontrados com sucesso.',
-  })
+  @ApiPaginatedResponse(ProductResponseDto)
   @Get()
   findAll(@Query() query: FindProductsQueryDto) {
     return this.productsService.findAll(query);
@@ -107,6 +109,7 @@ export class ProductsController {
   })
   @ApiOkResponse({
     description: 'Produto encontrado com sucesso.',
+    type: ProductResponseDto,
   })
   @ApiNotFoundResponse({
     description: 'Produto não encontrado.',
@@ -129,6 +132,7 @@ export class ProductsController {
   })
   @ApiOkResponse({
     description: 'Produto atualizado com sucesso.',
+    type: ProductResponseDto,
   })
   @ApiNotFoundResponse({
     description: 'Produto não encontrado.',

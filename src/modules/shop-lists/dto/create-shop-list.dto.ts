@@ -1,3 +1,4 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   IsNotEmpty,
   IsNumber,
@@ -9,6 +10,12 @@ import {
 import { Trim } from '../../../common/decorators/trim.decorator';
 
 export class CreateShopListDto {
+  // Nome
+  @ApiProperty({
+    example: 'Compras da semana',
+    description: 'Nome da lista de compras.',
+    minLength: 3,
+  })
   @MinLength(3, {
     message: 'O nome precisa ter pelo menos 3 caracteres.',
   })
@@ -21,6 +28,13 @@ export class CreateShopListDto {
   })
   name!: string;
 
+  // Limite de Orçamento
+  @ApiPropertyOptional({
+    example: 250.5,
+    description: 'Limite máximo de orçamento da lista de compras.',
+    minimum: 0,
+    nullable: true,
+  })
   @Min(0, {
     message: 'O limite de orçamento não pode ser negativo.',
   })

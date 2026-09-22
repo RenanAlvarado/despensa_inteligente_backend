@@ -23,6 +23,29 @@ export function setupSwagger(app: INestApplication, port: number): void {
       'Autenticação',
       'Endpoints de autenticação e gerenciamento de acesso.',
     )
+    .addTag(
+      'Usuários',
+      'Endpoints para gerenciamento da conta do usuário autenticado.',
+    )
+    .addTag('Produtos', 'Endpoints para cadastro e gerenciamento de produtos.')
+    .addTag('Marcas', 'Endpoints para cadastro e gerenciamento de marcas.')
+    .addTag(
+      'Categorias',
+      'Endpoints para cadastro e gerenciamento de categorias.',
+    )
+    .addTag('Lotes', 'Endpoints para gerenciamento dos lotes de produtos.')
+    .addTag(
+      'Movimentações de Lotes',
+      'Endpoints para registro e consulta das movimentações dos lotes.',
+    )
+    .addTag(
+      'Listas de Compras',
+      'Endpoints para gerenciamento das listas de compras.',
+    )
+    .addTag(
+      'Itens da Lista de Compras',
+      'Endpoints para gerenciamento dos produtos presentes nas listas de compras.',
+    )
     .build();
 
   const document = SwaggerModule.createDocument(app, config);

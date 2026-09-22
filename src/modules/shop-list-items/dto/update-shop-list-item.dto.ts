@@ -1,8 +1,15 @@
 import { PartialType } from '@nestjs/mapped-types';
-import { CreateShopListItemDto } from './create-shop-list-item.dto';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsInt, IsNumber, IsOptional, Min } from 'class-validator';
+import { CreateShopListItemDto } from './create-shop-list-item.dto';
 
 export class UpdateShopListItemDto extends PartialType(CreateShopListItemDto) {
+  // Preço Unitário
+  @ApiPropertyOptional({
+    example: 12.5,
+    description: 'Preço unitário do produto.',
+    minimum: 0,
+  })
   @IsNumber(
     {},
     {
@@ -15,6 +22,12 @@ export class UpdateShopListItemDto extends PartialType(CreateShopListItemDto) {
   @IsOptional()
   unitPrice?: number;
 
+  // Quantidade Comprada
+  @ApiPropertyOptional({
+    example: 2,
+    description: 'Quantidade do produto que já foi comprada.',
+    minimum: 0,
+  })
   @Min(0, {
     message: 'A quantidade comprada não pode ser negativa.',
   })

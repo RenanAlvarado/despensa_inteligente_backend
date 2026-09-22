@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { PaginatedResponseDto } from '../../common/dto/paginated-response.dto';
 import { Order } from '../../common/enums/order-filter.enum';
 import { capitalizeFirstLetter } from '../../common/utils/string.util';
 import { BatchesService } from '../batches/batches.service';
@@ -17,6 +18,7 @@ import { ShopListItemsService } from '../shop-list-items/shop-list-items.service
 import { CreateProductByBarcodeDto } from './dto/create-product-barcode.dto';
 import { CreateProductManualDto } from './dto/create-product-manual.dto';
 import { FindProductsQueryDto } from './dto/find-products-query.dto';
+import { ProductResponseDto } from './dto/product-response.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { Product } from './entities/product.entity';
 import { ProductSource } from './enums/products.enum';
@@ -40,7 +42,7 @@ export class ProductsService {
   // Cadastro Manual de Produtos
   async createManual(
     createProductManualDto: CreateProductManualDto,
-  ): Promise<Product> {
+  ): Promise<ProductResponseDto> {
     // Se existir código de barras, ele vai tentar salvar pela open food facts
     const { barcode } = createProductManualDto;
 
@@ -76,13 +78,15 @@ export class ProductsService {
       source: ProductSource.MANUAL,
     });
 
-    return this.productRepository.save(product);
+    const savedProduct = await this.productRepository.save(product);
+
+    return this.findOne(savedProduct.id);
   }
 
   // Cadastro via API
   async createByBarcode(
     createProductByBarcodeDto: CreateProductByBarcodeDto,
-  ): Promise<Product> {
+  ): Promise<ProductResponseDto> {
     // Validar repetição
     await this.validateBarcode(createProductByBarcodeDto.barcode);
     // Buscar produto na API externa
@@ -115,11 +119,15 @@ export class ProductsService {
     });
 
     // Salvar produto
-    return this.productRepository.save(product);
+    const savedProduct = await this.productRepository.save(product);
+
+    return this.findOne(savedProduct.id);
   }
 
   // Listar todos ou filtrar
-  async findAll(query: FindProductsQueryDto) {
+  async findAll(
+    query: FindProductsQueryDto,
+  ): Promise<PaginatedResponseDto<ProductResponseDto>> {
     const {
       name,
       brandId,
@@ -160,10 +168,10 @@ export class ProductsService {
       .skip(skip)
       .take(limit);
 
-    const [data, total] = await queryBuilder.getManyAndCount();
+    const [products, total] = await queryBuilder.getManyAndCount();
 
     return {
-      data,
+      data: products.map((product) => this.toResponse(product)),
       meta: {
         page,
         limit,
@@ -174,9 +182,19 @@ export class ProductsService {
   }
 
   // Buscar Por ID
-  async findOne(id: number): Promise<Product> {
-    const product = await this.productRepository.findOneBy({
-      id,
+  async findOne(id: number): Promise<ProductResponseDto> {
+    const product = await this.findOneEntity(id);
+
+    return this.toResponse(product);
+  }
+
+  async findOneEntity(id: number): Promise<Product> {
+    const product = await this.productRepository.findOne({
+      where: { id },
+      relations: {
+        brand: true,
+        category: true,
+      },
     });
 
     if (!product) {
@@ -190,8 +208,8 @@ export class ProductsService {
   async update(
     id: number,
     updateProductDto: UpdateProductDto,
-  ): Promise<Product> {
-    const product = await this.findOne(id);
+  ): Promise<ProductResponseDto> {
+    const product = await this.findOneEntity(id);
 
     const updateData = { ...updateProductDto };
 
@@ -212,14 +230,14 @@ export class ProductsService {
 
     Object.assign(product, updateData);
 
-    await this.productRepository.save(product);
+    const savedProduct = await this.productRepository.save(product);
 
-    return await this.findOne(id);
+    return this.findOne(savedProduct.id);
   }
 
   // Excluir
   async remove(id: number): Promise<void> {
-    await this.findOne(id);
+    await this.findOneEntity(id);
 
     const batchCount = await this.batchesService.countByProductId(id);
 
@@ -281,5 +299,30 @@ export class ProductsService {
     });
 
     return count > 0 ? count : undefined;
+  }
+
+  // Mudar para o padrão
+  private toResponse(product: Product): ProductResponseDto {
+    return {
+      id: product.id,
+      name: product.name,
+      barcode: product.barcode,
+      imageUrl: product.imageUrl,
+      unitType: product.unitType,
+      unitQuantity: product.unitQuantity,
+      source: product.source,
+      brand: product.brand
+        ? {
+            id: product.brand.id,
+            name: product.brand.name,
+          }
+        : null,
+      category: product.category
+        ? {
+            id: product.category.id,
+            name: product.category.name,
+          }
+        : null,
+    };
   }
 }

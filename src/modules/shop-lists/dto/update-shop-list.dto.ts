@@ -1,11 +1,18 @@
 import { PartialType } from '@nestjs/mapped-types';
-import { CreateShopListDto } from './create-shop-list.dto';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEnum, IsOptional, IsString } from 'class-validator';
-import { ShoppingListStatus } from '../enums/shop-lists.enums';
 import { Trim } from '../../../common/decorators/trim.decorator';
 import { ToUpperCase } from '../../../common/decorators/uppercase.decorator';
+import { ShoppingListStatus } from '../enums/shop-lists.enums';
+import { CreateShopListDto } from './create-shop-list.dto';
 
 export class UpdateShopListDto extends PartialType(CreateShopListDto) {
+  // Status
+  @ApiPropertyOptional({
+    enum: ShoppingListStatus,
+    example: ShoppingListStatus.COMPLETED,
+    description: 'Novo status da lista de compras.',
+  })
   @IsEnum(ShoppingListStatus, {
     message: 'O status da lista é inválido. Aceitos: ABERTA, CONCLUIDA',
   })
