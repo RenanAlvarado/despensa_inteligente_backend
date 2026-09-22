@@ -24,10 +24,12 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { ApiPaginatedResponse } from '../../common/decorators/api-paginated-response.decorator';
 import { ParseIdPipe } from '../../common/pipes/parse-id.pipe';
 import type { AuthenticatedRequest } from '../../common/types/authenticated-request.type';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { BatchesService } from './batches.service';
+import { BatchResponseDto } from './dto/batch-response.dto';
 import { CreateBatchDto } from './dto/create-batch.dto';
 import { FindBatchesQueryDto } from './dto/find-batches-query.dto';
 import { UpdateBatchDto } from './dto/update-batch.dto';
@@ -45,7 +47,10 @@ export class BatchesController {
     description:
       'Cadastra um novo lote vinculado ao usuário autenticado e a um produto existente.',
   })
-  @ApiCreatedResponse({ description: 'Lote criado com sucesso.' })
+  @ApiCreatedResponse({
+    description: 'Lote criado com sucesso.',
+    type: BatchResponseDto,
+  })
   @ApiNotFoundResponse({ description: 'Produto ou usuário não encontrado.' })
   @ApiResponse({
     status: 400,
@@ -68,7 +73,7 @@ export class BatchesController {
     description:
       'Lista os lotes pertencentes ao usuário autenticado com suporte a paginação, filtro por produto e ordenação.',
   })
-  @ApiOkResponse({ description: 'Lotes encontrados com sucesso.' })
+  @ApiPaginatedResponse(BatchResponseDto)
   @Get()
   findAll(
     @Req() req: AuthenticatedRequest,
@@ -84,7 +89,10 @@ export class BatchesController {
       'Retorna um lote específico pertencente ao usuário autenticado, incluindo seu valor total e status de validade.',
   })
   @ApiParam({ name: 'id', example: 1, description: 'ID do lote.' })
-  @ApiOkResponse({ description: 'Lote encontrado com sucesso.' })
+  @ApiOkResponse({
+    description: 'Lote encontrado com sucesso.',
+    type: BatchResponseDto,
+  })
   @ApiNotFoundResponse({ description: 'Lote não encontrado.' })
   @Get(':id')
   findOne(
@@ -92,7 +100,7 @@ export class BatchesController {
     @Param('id', ParseIdPipe) id: number,
   ) {
     const userId = request.user.sub;
-    return this.batchesService.findOne(+id, userId);
+    return this.batchesService.findOne(id, userId);
   }
 
   // Atualizar Lote
@@ -102,7 +110,10 @@ export class BatchesController {
       'Atualiza os dados de um lote existente. A data de compra não pode ser futura e a data de validade não pode ser anterior à data de compra.',
   })
   @ApiParam({ name: 'id', example: 1, description: 'ID do lote.' })
-  @ApiOkResponse({ description: 'Lote atualizado com sucesso.' })
+  @ApiOkResponse({
+    description: 'Lote atualizado com sucesso.',
+    type: BatchResponseDto,
+  })
   @ApiNotFoundResponse({ description: 'Lote não encontrado.' })
   @ApiBadRequestResponse({
     description:

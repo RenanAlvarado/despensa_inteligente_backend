@@ -3,14 +3,16 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { UpdateUserDto } from './dto/update-user.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { User } from './entities/user.entity';
-import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
-
-// Tirar Senha
-type SafeUser = Omit<User, 'passwordHash'>;
+import { Repository } from 'typeorm';
+import { PaginatedResponseDto } from '../../common/dto/paginated-response.dto';
+import { Order } from '../../common/enums/order-filter.enum';
+import { FindUsersQueryDto } from './dto/find-users-query.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { UserResponseDto } from './dto/user-response.dto';
+import { User } from './entities/user.entity';
+import { UserRole } from './enums/users-enums.enum';
 
 @Injectable()
 export class UsersService {
@@ -19,8 +21,8 @@ export class UsersService {
     private readonly userRepository: Repository<User>,
   ) {}
 
-  // Criar
-  async create(email: string, password: string): Promise<SafeUser> {
+  // Criar --> Usado no Auth
+  async create(email: string, password: string): Promise<User> {
     const existingUser = await this.findByEmail(email);
 
     if (existingUser) {
@@ -34,29 +36,73 @@ export class UsersService {
     const user = this.userRepository.create({
       email,
       passwordHash,
+      role: UserRole.USER,
     });
 
-    const savedUser = await this.userRepository.save(user);
-
-    return this.removePasswordHash(savedUser);
+    return this.userRepository.save(user);
   }
 
-  // Buscar todos
-  async findAll(): Promise<SafeUser[]> {
-    const users = await this.userRepository.find();
+  // Buscar todos ou filtrar
+  async findAll(
+    query: FindUsersQueryDto,
+  ): Promise<PaginatedResponseDto<UserResponseDto>> {
+    const { page = 1, limit = 10, order = Order.DESC, email, role } = query;
 
-    return users.map((user) => this.removePasswordHash(user));
+    const queryBuilder = this.userRepository
+      .createQueryBuilder('user')
+      .select([
+        'user.id',
+        'user.email',
+        'user.role',
+        'user.createdAt',
+        'user.updatedAt',
+      ]);
+
+    if (email) {
+      queryBuilder.andWhere('user.email LIKE :email', {
+        email: `%${email}%`,
+      });
+    }
+
+    if (role) {
+      queryBuilder.andWhere('user.role = :role', {
+        role,
+      });
+    }
+
+    queryBuilder
+      .orderBy('user.id', order)
+      .skip((page - 1) * limit)
+      .take(limit);
+
+    const [users, total] = await queryBuilder.getManyAndCount();
+
+    return {
+      data: users.map((user) => this.toResponse(user)),
+      meta: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   // Buscar Por iD
-  async findOne(id: number): Promise<SafeUser> {
+  async findOne(id: number): Promise<UserResponseDto> {
+    const user = await this.findOneEntity(id);
+
+    return this.toResponse(user);
+  }
+
+  async findOneEntity(id: number): Promise<User> {
     const user = await this.userRepository.findOneBy({ id });
 
     if (!user) {
       throw new NotFoundException('Usuário não encontrado');
     }
 
-    return this.removePasswordHash(user);
+    return user;
   }
 
   // Buscar Por email
@@ -89,24 +135,11 @@ export class UsersService {
     await this.userRepository.remove(user);
   }
 
-  // Tirar a senha dos retornos
-  private removePasswordHash(user: User): SafeUser {
+  // Transformação para resposta
+  private toResponse(user: User): UserResponseDto {
     return {
       id: user.id,
       email: user.email,
-      createdAt: user.createdAt,
-      updatedAt: user.updatedAt,
     };
-  }
-
-  // Busca sem Formatação
-  private async findOneEntity(id: number): Promise<User> {
-    const user = await this.userRepository.findOneBy({ id });
-
-    if (!user) {
-      throw new NotFoundException('Usuário não encontrado');
-    }
-
-    return user;
   }
 }

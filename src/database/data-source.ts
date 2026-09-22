@@ -1,5 +1,10 @@
-import 'dotenv/config';
+import dotenv from 'dotenv';
 import { DataSource } from 'typeorm';
+
+dotenv.config({
+  path:
+    process.env.NODE_ENV === 'production' ? '.env.production.local' : '.env',
+});
 
 export default new DataSource({
   type: 'mysql',

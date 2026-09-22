@@ -18,10 +18,12 @@ import {
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
+import { ApiPaginatedResponse } from '../../common/decorators/api-paginated-response.decorator';
 import { ParseIdPipe } from '../../common/pipes/parse-id.pipe';
 import type { AuthenticatedRequest } from '../../common/types/authenticated-request.type';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { BatchMovementsService } from './batch-movements.service';
+import { BatchMovementResponseDto } from './dto/batch-movement-response.dto';
 import { CreateBatchMovementDto } from './dto/create-batch-movement.dto';
 import { FindBatchMovementsQueryDto } from './dto/find-batches-movements-query.dto';
 
@@ -43,7 +45,10 @@ export class BatchMovementsController {
     example: 1,
     description: 'ID do lote que receberá a movimentação.',
   })
-  @ApiCreatedResponse({ description: 'Movimentação registrada com sucesso.' })
+  @ApiCreatedResponse({
+    description: 'Movimentação registrada com sucesso.',
+    type: BatchMovementResponseDto,
+  })
   @ApiNotFoundResponse({ description: 'Lote não encontrado.' })
   @ApiBadRequestResponse({
     description:
@@ -71,7 +76,7 @@ export class BatchMovementsController {
       'Lista as movimentações de um lote pertencente ao usuário autenticado, com paginação, ordenação e filtro por tipo.',
   })
   @ApiParam({ name: 'batchId', example: 1, description: 'ID do lote.' })
-  @ApiOkResponse({ description: 'Movimentações encontradas com sucesso.' })
+  @ApiPaginatedResponse(BatchMovementResponseDto)
   @ApiNotFoundResponse({ description: 'Lote não encontrado.' })
   @Get()
   findAll(
@@ -92,7 +97,10 @@ export class BatchMovementsController {
   })
   @ApiParam({ name: 'batchId', example: 1, description: 'ID do lote.' })
   @ApiParam({ name: 'id', example: 1, description: 'ID da movimentação.' })
-  @ApiOkResponse({ description: 'Movimentação encontrada com sucesso.' })
+  @ApiOkResponse({
+    description: 'Movimentação encontrada com sucesso.',
+    type: BatchMovementResponseDto,
+  })
   @ApiNotFoundResponse({ description: 'Lote ou movimentação não encontrado.' })
   @Get(':id')
   findOne(

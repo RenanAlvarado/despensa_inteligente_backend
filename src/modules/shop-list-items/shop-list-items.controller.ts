@@ -23,6 +23,7 @@ import {
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
+import { ApiPaginatedResponse } from '../../common/decorators/api-paginated-response.decorator';
 import { ParseIdPipe } from '../../common/pipes/parse-id.pipe';
 import type { AuthenticatedRequest } from '../../common/types/authenticated-request.type';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -49,9 +50,6 @@ export class ShopListItemsController {
     name: 'shopListId',
     example: 1,
     description: 'ID da lista de compras.',
-  })
-  @ApiCreatedResponse({
-    description: 'Item adicionado à lista de compras com sucesso.',
   })
   @ApiNotFoundResponse({
     description: 'Lista de compras ou produto não encontrado.',
@@ -89,17 +87,15 @@ export class ShopListItemsController {
     example: 1,
     description: 'ID da lista de compras.',
   })
-  @ApiOkResponse({
-    description: 'Itens da lista de compras encontrados com sucesso.',
-  })
   @ApiNotFoundResponse({ description: 'Lista de compras não encontrada.' })
+  @ApiPaginatedResponse(ShopListItemResponseDto)
   @Get()
   findAll(
-    @Param('shopListId', ParseIdPipe) shopListId: string,
+    @Param('shopListId', ParseIdPipe) shopListId: number,
     @Req() req: AuthenticatedRequest,
     @Query() query: FindShopListItemsQueryDto,
   ) {
-    return this.shopListItemsService.findAll(+shopListId, req.user.sub, query);
+    return this.shopListItemsService.findAll(shopListId, req.user.sub, query);
   }
 
   // Listar Por ID
@@ -118,7 +114,6 @@ export class ShopListItemsController {
     example: 1,
     description: 'ID do item da lista de compras.',
   })
-  @ApiOkResponse({ description: 'Item encontrado com sucesso.' })
   @ApiNotFoundResponse({
     description: 'Lista de compras ou item não encontrado.',
   })
@@ -153,7 +148,6 @@ export class ShopListItemsController {
     example: 1,
     description: 'ID do item da lista de compras.',
   })
-  @ApiOkResponse({ description: 'Item atualizado com sucesso.' })
   @ApiNotFoundResponse({
     description: 'Lista de compras, item ou produto não encontrado.',
   })

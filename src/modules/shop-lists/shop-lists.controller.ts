@@ -22,11 +22,13 @@ import {
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
+import { ApiPaginatedResponse } from '../../common/decorators/api-paginated-response.decorator';
 import { ParseIdPipe } from '../../common/pipes/parse-id.pipe';
 import type { AuthenticatedRequest } from '../../common/types/authenticated-request.type';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateShopListDto } from './dto/create-shop-list.dto';
 import { FindShopListsQueryDto } from './dto/find-shop-lists-query.dto';
+import { ShoppingListResponseDto } from './dto/shop-list-response.dto';
 import { UpdateShopListDto } from './dto/update-shop-list.dto';
 import { ShopListsService } from './shop-lists.service';
 
@@ -43,7 +45,10 @@ export class ShopListsController {
     description:
       'Cria uma nova lista de compras para o usuário autenticado. A lista é criada inicialmente com status ABERTA.',
   })
-  @ApiCreatedResponse({ description: 'Lista de compras criada com sucesso.' })
+  @ApiCreatedResponse({
+    description: 'Lista de compras criada com sucesso.',
+    type: ShoppingListResponseDto,
+  })
   @Post()
   create(
     @Req() request: AuthenticatedRequest,
@@ -60,7 +65,7 @@ export class ShopListsController {
     description:
       'Retorna as listas de compras do usuário autenticado com suporte a paginação, ordenação e filtros por nome e status.',
   })
-  @ApiOkResponse({ description: 'Listas de compras encontradas com sucesso.' })
+  @ApiPaginatedResponse(ShoppingListResponseDto)
   @Get()
   findAll(
     @Req() req: AuthenticatedRequest,
@@ -76,7 +81,10 @@ export class ShopListsController {
       'Retorna uma lista de compras específica pertencente ao usuário autenticado.',
   })
   @ApiParam({ name: 'id', example: 1, description: 'ID da lista de compras.' })
-  @ApiOkResponse({ description: 'Lista de compras encontrada com sucesso.' })
+  @ApiOkResponse({
+    description: 'Lista de compras encontrada com sucesso.',
+    type: ShoppingListResponseDto,
+  })
   @ApiNotFoundResponse({ description: 'Lista de compras não encontrada.' })
   @Get(':id')
   findOne(
@@ -95,7 +103,10 @@ export class ShopListsController {
       'Atualiza o nome, limite de orçamento ou status de uma lista de compras existente.',
   })
   @ApiParam({ name: 'id', example: 1, description: 'ID da lista de compras.' })
-  @ApiOkResponse({ description: 'Lista de compras atualizada com sucesso.' })
+  @ApiOkResponse({
+    description: 'Lista de compras atualizada com sucesso.',
+    type: ShoppingListResponseDto,
+  })
   @ApiNotFoundResponse({ description: 'Lista de compras não encontrada.' })
   @Put(':id')
   update(

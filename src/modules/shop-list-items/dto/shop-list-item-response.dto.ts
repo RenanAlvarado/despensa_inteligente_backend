@@ -77,18 +77,4 @@ export class ShopListItemResponseDto {
     description: 'Valor total correspondente à quantidade comprada.',
   })
   purchasedTotal!: number | null;
-
-  // Criado em
-  @ApiProperty({
-    example: '2026-09-21T18:30:00.000Z',
-    description: 'Data de criação do item.',
-  })
-  createdAt!: Date;
-
-  // Atualizado em
-  @ApiProperty({
-    example: '2026-09-21T19:00:00.000Z',
-    description: 'Data da última atualização do item.',
-  })
-  updatedAt!: Date;
 }

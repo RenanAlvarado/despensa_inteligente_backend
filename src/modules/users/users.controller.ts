@@ -6,20 +6,28 @@ import {
   HttpCode,
   HttpStatus,
   Patch,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiForbiddenResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
   ApiOkResponse,
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+import { ApiPaginatedResponse } from '../../common/decorators/api-paginated-response.decorator';
 import type { AuthenticatedRequest } from '../../common/types/authenticated-request.type';
+import { Roles } from '../auth/decorators/roles.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { FindUsersQueryDto } from './dto/find-users-query.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UserResponseDto } from './dto/user-response.dto';
+import { UserRole } from './enums/users-enums.enum';
 import { UsersService } from './users.service';
 
 @ApiTags('Usuários')
@@ -29,13 +37,32 @@ import { UsersService } from './users.service';
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  // Listar Todos ou filtrar
+  @ApiOperation({
+    summary: 'Busca todos os usuários',
+    description: 'Retorna uma pesquisa de todos os usuários',
+  })
+  @ApiPaginatedResponse(UserResponseDto)
+  @ApiForbiddenResponse({
+    description: 'Usuário autenticado não possui permissão de administrador.',
+  })
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.ADMIN)
+  @Get('all')
+  async findAll(@Query() query: FindUsersQueryDto) {
+    return this.usersService.findAll(query);
+  }
+
   // Buscar Por ID
   @ApiOperation({
     summary: 'Busca o usuário autenticado',
     description:
       'Retorna os dados do usuário autenticado através do token JWT. A senha não é retornada.',
   })
-  @ApiOkResponse({ description: 'Dados do usuário encontrados com sucesso.' })
+  @ApiOkResponse({
+    description: 'Dados do usuário encontrados com sucesso.',
+    type: UserResponseDto,
+  })
   @ApiNotFoundResponse({ description: 'Usuário não encontrado.' })
   @Get()
   findOne(@Req() request: AuthenticatedRequest) {

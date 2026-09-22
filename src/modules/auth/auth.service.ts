@@ -1,10 +1,12 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { UserRole } from '../users/enums/users-enums.enum';
 import { UsersService } from '../users/users.service';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterUserDto } from './dto/register-user.dto';
+import { JwtPayload } from './interfaces/jwt-payload.interface';
 
 @Injectable()
 export class AuthService {
@@ -21,7 +23,7 @@ export class AuthService {
       registerUserDto.password,
     );
 
-    return this.generateToken(user.id, user.email);
+    return this.generateToken(user.id, user.email, user.role);
   }
 
   // Login retornando Jwt
@@ -41,17 +43,19 @@ export class AuthService {
       throw new UnauthorizedException('E-mail ou senha inválidos.');
     }
 
-    return this.generateToken(user.id, user.email);
+    return this.generateToken(user.id, user.email, user.role);
   }
 
   // Geração do JWT
   private async generateToken(
     userId: number,
     email: string,
+    role: UserRole,
   ): Promise<AuthResponseDto> {
-    const payload = {
+    const payload: JwtPayload = {
       sub: userId,
       email,
+      role,
     };
 
     const token = await this.jwtService.signAsync(payload);

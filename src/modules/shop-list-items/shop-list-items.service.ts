@@ -7,11 +7,13 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { PaginatedResponseDto } from '../../common/dto/paginated-response.dto';
 import { Order } from '../../common/enums/order-filter.enum';
 import { ProductsService } from '../products/products.service';
 import { ShopListsService } from '../shop-lists/shop-lists.service';
 import { CreateShopListItemDto } from './dto/create-shop-list-item.dto';
 import { FindShopListItemsQueryDto } from './dto/find-shop-list-items-query.dto';
+import { ShopListItemResponseDto } from './dto/shop-list-item-response.dto';
 import { UpdateShopListItemDto } from './dto/update-shop-list-item.dto';
 import { ShopListItem } from './entities/shop-list-item.entity';
 import { ShoppingListItemStatus } from './enums/shop-list-item.enum';
@@ -33,11 +35,11 @@ export class ShopListItemsService {
     shopListId: number,
     userId: number,
     createShopListItemDto: CreateShopListItemDto,
-  ): Promise<ShopListItem> {
+  ): Promise<ShopListItemResponseDto> {
     // Validação
-    await this.shopListsService.findOne(shopListId, userId);
+    await this.shopListsService.findOneEntity(shopListId, userId);
 
-    await this.productsService.findOne(createShopListItemDto.productId);
+    await this.productsService.findOneEntity(createShopListItemDto.productId);
 
     await this.validateProductNotExists(
       shopListId,
@@ -54,7 +56,9 @@ export class ShopListItemsService {
       unitPrice: null,
     });
 
-    return await this.shopListItemRepository.save(shopListItem);
+    const savedItem = await this.shopListItemRepository.save(shopListItem);
+
+    return this.toResponse(savedItem);
   }
 
   // Buscar todos os itens da lista
@@ -62,8 +66,8 @@ export class ShopListItemsService {
     shopListId: number,
     userId: number,
     query: FindShopListItemsQueryDto,
-  ) {
-    await this.shopListsService.findOne(shopListId, userId);
+  ): Promise<PaginatedResponseDto<ShopListItemResponseDto>> {
+    await this.shopListsService.findOneEntity(shopListId, userId);
 
     const {
       page = 1,
@@ -103,7 +107,7 @@ export class ShopListItemsService {
     const [items, total] = await queryBuilder.getManyAndCount();
 
     return {
-      data: this.formatShopListItem(items),
+      data: items.map((item) => this.toResponse(item)),
       meta: {
         page,
         limit,
@@ -114,16 +118,30 @@ export class ShopListItemsService {
   }
 
   // Buscar Por ID
-  async findOne(id: number, shopListId: number, userId: number) {
-    await this.shopListsService.findOne(shopListId, userId);
+  async findOne(
+    id: number,
+    shopListId: number,
+    userId: number,
+  ): Promise<ShopListItemResponseDto> {
+    await this.shopListsService.findOneEntity(shopListId, userId);
+
+    const shopListItem = await this.findOneEntity(id, shopListId, userId);
+
+    return this.toResponse(shopListItem);
+  }
+
+  async findOneEntity(
+    id: number,
+    shopListId: number,
+    userId: number,
+  ): Promise<ShopListItem> {
+    // Validar Lista
+    await this.shopListsService.findOneEntity(shopListId, userId);
 
     const shopListItem = await this.shopListItemRepository.findOne({
       where: {
         id,
         shoppingListId: shopListId,
-      },
-      relations: {
-        product: true,
       },
     });
 
@@ -131,7 +149,7 @@ export class ShopListItemsService {
       throw new NotFoundException('Item da lista de compras não encontrado.');
     }
 
-    return this.formatShopListItem(shopListItem);
+    return shopListItem;
   }
 
   // Atualizar Item
@@ -140,7 +158,7 @@ export class ShopListItemsService {
     shopListId: number,
     userId: number,
     updateShopListItemDto: UpdateShopListItemDto,
-  ) {
+  ): Promise<ShopListItemResponseDto> {
     const shopListItem = await this.findOneEntity(id, shopListId, userId);
 
     const {
@@ -152,7 +170,7 @@ export class ShopListItemsService {
     } = updateShopListItemDto;
 
     if (productId !== undefined && productId !== shopListItem.productId) {
-      await this.productsService.findOne(productId);
+      await this.productsService.findOneEntity(productId);
 
       await this.validateProductNotExists(shopListId, productId);
 
@@ -182,7 +200,7 @@ export class ShopListItemsService {
 
     const savedItem = await this.shopListItemRepository.save(shopListItem);
 
-    return this.formatShopListItem(savedItem);
+    return this.toResponse(savedItem);
   }
 
   // Excluir item
@@ -190,28 +208,6 @@ export class ShopListItemsService {
     const shopListItem = await this.findOneEntity(id, shopListId, userId);
 
     await this.shopListItemRepository.remove(shopListItem);
-  }
-
-  // Busca da entidade sem padronizar
-  private async findOneEntity(
-    id: number,
-    shopListId: number,
-    userId: number,
-  ): Promise<ShopListItem> {
-    await this.shopListsService.findOne(shopListId, userId);
-
-    const shopListItem = await this.shopListItemRepository.findOne({
-      where: {
-        id,
-        shoppingListId: shopListId,
-      },
-    });
-
-    if (!shopListItem) {
-      throw new NotFoundException('Item da lista de compras não encontrado.');
-    }
-
-    return shopListItem;
   }
 
   // Verificar repetição de produto
@@ -249,32 +245,6 @@ export class ShopListItemsService {
     return ShoppingListItemStatus.COMPLETED;
   }
 
-  // Retorno de preços
-  private formatShopListItem(item: ShopListItem | ShopListItem[]) {
-    const format = (item: ShopListItem) => {
-      const unitPrice = item.unitPrice !== null ? Number(item.unitPrice) : null;
-
-      return {
-        ...item,
-        unitPrice,
-        requestedTotal:
-          unitPrice !== null
-            ? Number((unitPrice * item.requestedQuantity).toFixed(2))
-            : null,
-        purchasedTotal:
-          unitPrice !== null
-            ? Number((unitPrice * item.purchasedQuantity).toFixed(2))
-            : null,
-      };
-    };
-
-    if (Array.isArray(item)) {
-      return item.map(format);
-    }
-
-    return format(item);
-  }
-
   // Contar itens de lista de compras por produto
   async countByProductId(productId: number): Promise<number | null> {
     const count = await this.shopListItemRepository.countBy({
@@ -282,5 +252,29 @@ export class ShopListItemsService {
     });
 
     return count > 0 ? count : null;
+  }
+
+  // Formatar resposta
+  private toResponse(item: ShopListItem): ShopListItemResponseDto {
+    const unitPrice = item.unitPrice !== null ? Number(item.unitPrice) : null;
+
+    return {
+      id: item.id,
+      shoppingListId: item.shoppingListId,
+      productId: item.productId,
+      requestedQuantity: item.requestedQuantity,
+      purchasedQuantity: item.purchasedQuantity,
+      status: item.status,
+      notes: item.notes,
+      unitPrice,
+      requestedTotal:
+        unitPrice !== null
+          ? Number((unitPrice * item.requestedQuantity).toFixed(2))
+          : null,
+      purchasedTotal:
+        unitPrice !== null
+          ? Number((unitPrice * item.purchasedQuantity).toFixed(2))
+          : null,
+    };
   }
 }

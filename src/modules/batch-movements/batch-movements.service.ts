@@ -3,14 +3,16 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { CreateBatchMovementDto } from './dto/create-batch-movement.dto';
-import { BatchMovement } from './entities/batch-movement.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
-import { BatchesService } from '../batches/batches.service';
-import { BatchMovementConfig } from './enums/batch-movement.enums';
-import { FindBatchMovementsQueryDto } from './dto/find-batches-movements-query.dto';
+import { DataSource, Repository } from 'typeorm';
+import { PaginatedResponseDto } from '../../common/dto/paginated-response.dto';
 import { Order } from '../../common/enums/order-filter.enum';
+import { BatchesService } from '../batches/batches.service';
+import { BatchMovementResponseDto } from './dto/batch-movement-response.dto';
+import { CreateBatchMovementDto } from './dto/create-batch-movement.dto';
+import { FindBatchMovementsQueryDto } from './dto/find-batches-movements-query.dto';
+import { BatchMovement } from './entities/batch-movement.entity';
+import { BatchMovementConfig } from './enums/batch-movement.enums';
 
 @Injectable()
 export class BatchMovementsService {
@@ -28,9 +30,9 @@ export class BatchMovementsService {
     userId: number,
     batchId: number,
     createBatchMovementDto: CreateBatchMovementDto,
-  ): Promise<BatchMovement> {
+  ): Promise<BatchMovementResponseDto> {
     // Verificar Existência do Batch e usuário
-    const batch = await this.batchesService.findOne(batchId, userId);
+    const batch = await this.batchesService.findOneEntity(batchId, userId);
 
     const config = BatchMovementConfig[createBatchMovementDto.type];
 
@@ -67,7 +69,9 @@ export class BatchMovementsService {
         quantity: createBatchMovementDto.quantity,
       });
 
-      return manager.save(BatchMovement, movement);
+      const savedMovement = await manager.save(BatchMovement, movement);
+
+      return this.toResponse(savedMovement);
     });
   }
 
@@ -76,8 +80,8 @@ export class BatchMovementsService {
     userId: number,
     batchId: number,
     query: FindBatchMovementsQueryDto,
-  ) {
-    await this.batchesService.findOne(batchId, userId);
+  ): Promise<PaginatedResponseDto<BatchMovementResponseDto>> {
+    await this.batchesService.findOneEntity(batchId, userId);
 
     const { page = 1, limit = 10, type, order = Order.DESC } = query;
 
@@ -104,7 +108,7 @@ export class BatchMovementsService {
     const [movements, total] = await queryBuilder.getManyAndCount();
 
     return {
-      data: movements,
+      data: movements.map((movement) => this.toResponse(movement)),
       meta: {
         page,
         limit,
@@ -119,8 +123,8 @@ export class BatchMovementsService {
     userId: number,
     batchId: number,
     id: number,
-  ): Promise<BatchMovement> {
-    await this.batchesService.findOne(batchId, userId);
+  ): Promise<BatchMovementResponseDto> {
+    await this.batchesService.findOneEntity(batchId, userId);
 
     const movement = await this.batchMovementRepository.findOne({
       where: {
@@ -133,6 +137,16 @@ export class BatchMovementsService {
       throw new NotFoundException('Movimentação não encontrada.');
     }
 
-    return movement;
+    return this.toResponse(movement);
+  }
+
+  private toResponse(movement: BatchMovement): BatchMovementResponseDto {
+    return {
+      id: movement.id,
+      batchId: movement.batchId,
+      type: movement.type,
+      reason: movement.reason,
+      quantity: movement.quantity,
+    };
   }
 }

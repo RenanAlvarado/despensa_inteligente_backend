@@ -35,7 +35,10 @@ export class ProductsService {
     @Inject(forwardRef(() => CategoriesService))
     private readonly categoriesService: CategoriesService,
     private readonly openFoodFactsService: OpenFoodFactsService,
+
+    @Inject(forwardRef(() => BatchesService))
     private readonly batchesService: BatchesService,
+
     private readonly shopListItemsService: ShopListItemsService,
   ) {}
 
@@ -262,11 +265,11 @@ export class ProductsService {
     categoryId?: number | null,
   ): Promise<void> {
     if (brandId !== undefined && brandId !== null) {
-      await this.brandsService.findOne(brandId);
+      await this.brandsService.findOneEntity(brandId);
     }
 
     if (categoryId !== undefined && categoryId !== null) {
-      await this.categoriesService.findOne(categoryId);
+      await this.categoriesService.findOneEntity(categoryId);
     }
   }
 

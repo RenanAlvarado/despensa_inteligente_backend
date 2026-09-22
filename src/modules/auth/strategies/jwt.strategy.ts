@@ -3,11 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { UsersService } from '../../users/users.service';
-
-export interface JwtPayload {
-  sub: number;
-  email: string;
-}
+import { JwtPayload } from '../interfaces/jwt-payload.interface';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -24,7 +20,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   async validate(payload: JwtPayload): Promise<JwtPayload> {
     try {
-      await this.usersService.findOne(payload.sub);
+      await this.usersService.findOneEntity(payload.sub);
     } catch {
       throw new UnauthorizedException(
         'Usuário não encontrado ou Token Inválido.',

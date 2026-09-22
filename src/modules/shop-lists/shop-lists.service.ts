@@ -1,10 +1,12 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
+import { PaginatedResponseDto } from '../../common/dto/paginated-response.dto';
 import { Order } from '../../common/enums/order-filter.enum';
 import { UsersService } from '../users/users.service';
 import { CreateShopListDto } from './dto/create-shop-list.dto';
 import { FindShopListsQueryDto } from './dto/find-shop-lists-query.dto';
+import { ShoppingListResponseDto } from './dto/shop-list-response.dto';
 import { UpdateShopListDto } from './dto/update-shop-list.dto';
 import { ShoppingList } from './entities/shop-list.entity';
 import { ShoppingListStatus } from './enums/shop-lists.enums';
@@ -22,8 +24,8 @@ export class ShopListsService {
   async create(
     userId: number,
     createShoppingListDto: CreateShopListDto,
-  ): Promise<ShoppingList> {
-    await this.usersService.findOne(userId);
+  ): Promise<ShoppingListResponseDto> {
+    await this.usersService.findOneEntity(userId);
 
     const shoppingList = this.shoppingListRepository.create({
       userId,
@@ -35,11 +37,17 @@ export class ShopListsService {
           : null,
     });
 
-    return this.shoppingListRepository.save(shoppingList);
+    const savedShoppingList =
+      await this.shoppingListRepository.save(shoppingList);
+
+    return this.toResponse(savedShoppingList);
   }
 
   // Buscar todos
-  async findAll(userId: number, query: FindShopListsQueryDto) {
+  async findAll(
+    userId: number,
+    query: FindShopListsQueryDto,
+  ): Promise<PaginatedResponseDto<ShoppingListResponseDto>> {
     const { page = 1, limit = 10, order = Order.DESC, name, status } = query;
 
     const queryBuilder = this.shoppingListRepository
@@ -71,7 +79,7 @@ export class ShopListsService {
     const [shoppingLists, total] = await queryBuilder.getManyAndCount();
 
     return {
-      data: shoppingLists,
+      data: shoppingLists.map((shoppingList) => this.toResponse(shoppingList)),
       meta: {
         page,
         limit,
@@ -82,7 +90,13 @@ export class ShopListsService {
   }
 
   // Buscar Lista por ID
-  async findOne(id: number, userId: number): Promise<ShoppingList> {
+  async findOne(id: number, userId: number): Promise<ShoppingListResponseDto> {
+    const shoppingList = await this.findOneEntity(id, userId);
+
+    return this.toResponse(shoppingList);
+  }
+
+  async findOneEntity(id: number, userId: number): Promise<ShoppingList> {
     const shoppingList = await this.shoppingListRepository.findOne({
       where: {
         id,
@@ -102,8 +116,8 @@ export class ShopListsService {
     id: number,
     userId: number,
     updateShopListDto: UpdateShopListDto,
-  ): Promise<ShoppingList> {
-    const shoppingList = await this.findOne(id, userId);
+  ): Promise<ShoppingListResponseDto> {
+    const shoppingList = await this.findOneEntity(id, userId);
 
     if (updateShopListDto.name !== undefined) {
       shoppingList.name = updateShopListDto.name;
@@ -120,13 +134,29 @@ export class ShopListsService {
       shoppingList.status = updateShopListDto.status;
     }
 
-    return this.shoppingListRepository.save(shoppingList);
+    const savedShoppingList =
+      await this.shoppingListRepository.save(shoppingList);
+
+    return this.toResponse(savedShoppingList);
   }
 
   // Excluir Lista
   async remove(id: number, userId: number): Promise<void> {
-    const shoppingList = await this.findOne(id, userId);
+    const shoppingList = await this.findOneEntity(id, userId);
 
     await this.shoppingListRepository.remove(shoppingList);
+  }
+
+  // Formatar resposta
+  private toResponse(shoppingList: ShoppingList): ShoppingListResponseDto {
+    return {
+      id: shoppingList.id,
+      name: shoppingList.name,
+      status: shoppingList.status,
+      budgetLimit:
+        shoppingList.budgetLimit !== null
+          ? Number(shoppingList.budgetLimit)
+          : null,
+    };
   }
 }

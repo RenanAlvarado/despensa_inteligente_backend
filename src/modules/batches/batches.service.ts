@@ -7,20 +7,16 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { EntityManager, Repository } from 'typeorm';
+import { PaginatedResponseDto } from '../../common/dto/paginated-response.dto';
 import { Order } from '../../common/enums/order-filter.enum';
 import { ProductsService } from '../products/products.service';
 import { UsersService } from '../users/users.service';
+import { BatchResponseDto } from './dto/batch-response.dto';
 import { CreateBatchDto } from './dto/create-batch.dto';
 import { FindBatchesQueryDto } from './dto/find-batches-query.dto';
 import { UpdateBatchDto } from './dto/update-batch.dto';
 import { Batch } from './entities/batch.entity';
 import { BatchSortBy, BatchStatus } from './enums/batches-enums.enum';
-
-// Retorno de dados
-type BatchWithTotalValue = Batch & {
-  totalValue: number;
-  status: BatchStatus;
-};
 
 const sortColumnMap = {
   [BatchSortBy.PURCHASE_DATE]: 'batch.purchaseDate',
@@ -42,12 +38,15 @@ export class BatchesService {
   ) {}
 
   // Criar Lote
-  async create(userId: number, createBatchDto: CreateBatchDto): Promise<Batch> {
+  async create(
+    userId: number,
+    createBatchDto: CreateBatchDto,
+  ): Promise<BatchResponseDto> {
     // Validar usuário
-    await this.usersService.findOne(userId);
+    await this.usersService.findOneEntity(userId);
 
     // Validar produto
-    await this.productsService.findOne(createBatchDto.productId);
+    await this.productsService.findOneEntity(createBatchDto.productId);
 
     // Validar Datas
     const expirationDate = new Date(createBatchDto.expirationDate);
@@ -65,11 +64,16 @@ export class BatchesService {
       notes: createBatchDto.notes ?? null,
     });
 
-    return this.batchRepository.save(batch);
+    const savedBatch = await this.batchRepository.save(batch);
+
+    return this.toResponse(savedBatch);
   }
 
   // Buscar todos os lotes ou aplicar filtros
-  async findAll(userId: number, query: FindBatchesQueryDto) {
+  async findAll(
+    userId: number,
+    query: FindBatchesQueryDto,
+  ): Promise<PaginatedResponseDto<BatchResponseDto>> {
     const {
       page = 1,
       limit = 10,
@@ -100,14 +104,8 @@ export class BatchesService {
 
     const [batches, total] = await queryBuilder.getManyAndCount();
 
-    const data = batches.map((batch) => ({
-      ...batch,
-      totalValue: this.calculateTotalValue(batch),
-      status: this.calculateStatus(batch.expirationDate),
-    }));
-
     return {
-      data,
+      data: batches.map((batch) => this.toResponse(batch)),
       meta: {
         page,
         limit,
@@ -118,7 +116,13 @@ export class BatchesService {
   }
 
   // Buscar Lote pelo ID (Deve ser do usuário)
-  async findOne(id: number, userId: number): Promise<BatchWithTotalValue> {
+  async findOne(id: number, userId: number): Promise<BatchResponseDto> {
+    const batch = await this.findOneEntity(id, userId);
+
+    return this.toResponse(batch);
+  }
+
+  async findOneEntity(id: number, userId: number): Promise<Batch> {
     const batch = await this.batchRepository.findOne({
       where: {
         id,
@@ -130,11 +134,7 @@ export class BatchesService {
       throw new NotFoundException('Lote não encontrado.');
     }
 
-    return {
-      ...batch,
-      totalValue: this.calculateTotalValue(batch),
-      status: this.calculateStatus(batch.expirationDate),
-    };
+    return batch;
   }
 
   // Atualizar Lote
@@ -142,10 +142,11 @@ export class BatchesService {
     id: number,
     userId: number,
     updateBatchDto: UpdateBatchDto,
-  ): Promise<Batch> {
+  ): Promise<BatchResponseDto> {
     // Validar Lote
-    const batch = await this.findOne(id, userId);
+    const batch = await this.findOneEntity(id, userId);
 
+    // Validação de Datas
     const expirationDate =
       updateBatchDto.expirationDate !== undefined
         ? new Date(updateBatchDto.expirationDate)
@@ -164,7 +165,16 @@ export class BatchesService {
       purchaseDate,
     });
 
-    return this.batchRepository.save(batch);
+    const savedBatch = await this.batchRepository.save(batch);
+
+    return this.toResponse(savedBatch);
+  }
+
+  // Excluir Lote
+  async remove(id: number, userId: number): Promise<void> {
+    const batch = await this.findOneEntity(id, userId);
+
+    await this.batchRepository.remove(batch);
   }
 
   // Mudar quantidade
@@ -185,13 +195,6 @@ export class BatchesService {
     batch.quantity = newQuantity;
 
     return manager.save(Batch, batch);
-  }
-
-  // Excluir Lote
-  async remove(id: number, userId: number): Promise<void> {
-    const batch = await this.findOne(id, userId);
-
-    await this.batchRepository.remove(batch);
   }
 
   // Valor total dos produtos
@@ -239,5 +242,20 @@ export class BatchesService {
     }
 
     return BatchStatus.VALID;
+  }
+
+  // Formatar para a resposta
+  private toResponse(batch: Batch): BatchResponseDto {
+    return {
+      id: batch.id,
+      productId: batch.productId,
+      expirationDate: batch.expirationDate,
+      purchaseDate: batch.purchaseDate,
+      quantity: batch.quantity,
+      unitPrice: batch.unitPrice,
+      notes: batch.notes,
+      totalValue: this.calculateTotalValue(batch),
+      status: this.calculateStatus(batch.expirationDate),
+    };
   }
 }
