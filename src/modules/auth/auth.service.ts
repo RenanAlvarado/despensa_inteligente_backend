@@ -1,8 +1,9 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { LoginDto } from './dto/login.dto';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from '../users/users.service';
+import { AuthResponseDto } from './dto/auth-response.dto';
+import { LoginDto } from './dto/login.dto';
 import { RegisterUserDto } from './dto/register-user.dto';
 
 @Injectable()
@@ -14,7 +15,7 @@ export class AuthService {
   ) {}
 
   // Cadastro + autenticação
-  async register(registerUserDto: RegisterUserDto): Promise<{ token: string }> {
+  async register(registerUserDto: RegisterUserDto): Promise<AuthResponseDto> {
     const user = await this.usersService.create(
       registerUserDto.email,
       registerUserDto.password,
@@ -24,7 +25,7 @@ export class AuthService {
   }
 
   // Login retornando Jwt
-  async login(loginDto: LoginDto): Promise<{ token: string }> {
+  async login(loginDto: LoginDto): Promise<AuthResponseDto> {
     const user = await this.usersService.findByEmail(loginDto.email);
 
     if (!user) {
@@ -47,7 +48,7 @@ export class AuthService {
   private async generateToken(
     userId: number,
     email: string,
-  ): Promise<{ token: string }> {
+  ): Promise<AuthResponseDto> {
     const payload = {
       sub: userId,
       email,

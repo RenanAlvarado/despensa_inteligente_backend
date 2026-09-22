@@ -9,6 +9,7 @@ import {
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
+import { AuthResponseDto } from './dto/auth-response.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterUserDto } from './dto/register-user.dto';
 
@@ -37,11 +38,7 @@ export class AuthController {
   })
   @ApiCreatedResponse({
     description: 'Usuário cadastrado e autenticado com sucesso.',
-    schema: {
-      example: {
-        token: 'eyJhbGciOiJIUzI1NiIs...',
-      },
-    },
+    type: AuthResponseDto,
   })
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
@@ -64,11 +61,7 @@ export class AuthController {
   })
   @ApiOkResponse({
     description: 'Login realizado com sucesso.',
-    schema: {
-      example: {
-        token: 'eyJhbGciOiJIUzI1NiIs...',
-      },
-    },
+    type: AuthResponseDto,
   })
   @Post('login')
   @HttpCode(HttpStatus.OK)
