@@ -6,7 +6,7 @@ import { Order } from '../enums/order-filter.enum';
 export class PaginationQueryDto {
   @ApiPropertyOptional({
     example: 1,
-    description: 'Número da página.',
+    description: 'Número da página. Mínimo 1',
     minimum: 1,
     default: 1,
   })
@@ -18,7 +18,7 @@ export class PaginationQueryDto {
 
   @ApiPropertyOptional({
     example: 10,
-    description: 'Quantidade de registros por página.',
+    description: 'Quantidade de registros por página. Mínimo 1 e Máximo 100',
     minimum: 1,
     maximum: 100,
     default: 10,

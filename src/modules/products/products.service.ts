@@ -17,6 +17,7 @@ import { OpenFoodFactsService } from '../open-food-facts/open-food-facts.service
 import { ShopListItemsService } from '../shop-list-items/shop-list-items.service';
 import { CreateProductByBarcodeDto } from './dto/create-product-barcode.dto';
 import { CreateProductManualDto } from './dto/create-product-manual.dto';
+import { FindExternalProductsQueryDto } from './dto/find-external-products-query.dto';
 import { FindProductsQueryDto } from './dto/find-products-query.dto';
 import { ProductResponseDto } from './dto/product-response.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -182,6 +183,13 @@ export class ProductsService {
         totalPages: Math.ceil(total / limit),
       },
     };
+  }
+
+  // Listar via API externa
+  async searchExternalProducts(query: FindExternalProductsQueryDto) {
+    const { name, page = 1, limit = 10 } = query;
+
+    return this.openFoodFactsService.searchProductsByName(name, page, limit);
   }
 
   // Buscar Por ID

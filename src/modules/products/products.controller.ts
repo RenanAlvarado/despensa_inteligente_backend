@@ -28,6 +28,8 @@ import { ParseIdPipe } from '../../common/pipes/parse-id.pipe';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CreateProductByBarcodeDto } from './dto/create-product-barcode.dto';
 import { CreateProductManualDto } from './dto/create-product-manual.dto';
+import { ExternalProductResponseDto } from './dto/external-product-response.dto';
+import { FindExternalProductsQueryDto } from './dto/find-external-products-query.dto';
 import { FindProductsQueryDto } from './dto/find-products-query.dto';
 import { ProductResponseDto } from './dto/product-response.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -87,7 +89,7 @@ export class ProductsController {
 
   // Listar Todos ou Filtrar
   @ApiOperation({
-    summary: 'Lista produtos',
+    summary: 'Lista produtos do Banco de Dados',
     description:
       'Lista os produtos cadastrados com suporte a paginação e filtros por nome, marca e categoria.',
   })
@@ -95,6 +97,25 @@ export class ProductsController {
   @Get()
   findAll(@Query() query: FindProductsQueryDto) {
     return this.productsService.findAll(query);
+  }
+
+  // Buscar produtos na API Open Food Facts
+  @ApiOperation({
+    summary: 'Busca produtos na Open Food Facts',
+    description:
+      'Realiza uma nova busca de produtos na API Open Food Facts utilizando o nome informado.',
+  })
+  @ApiPaginatedResponse(ExternalProductResponseDto)
+  @ApiNotFoundResponse({
+    description: 'Nenhum produto foi encontrado para o termo informado.',
+  })
+  @ApiResponse({
+    status: 503,
+    description: 'O serviço externo de consulta de produtos está indisponível.',
+  })
+  @Get('search')
+  search(@Query() query: FindExternalProductsQueryDto) {
+    return this.productsService.searchExternalProducts(query);
   }
 
   // Buscar Por ID

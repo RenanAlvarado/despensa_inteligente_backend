@@ -1,19 +1,20 @@
+import { HttpService } from '@nestjs/axios';
 import {
-  Injectable,
   BadRequestException,
+  Injectable,
   NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
 import { catchError, firstValueFrom, throwError } from 'rxjs';
+import { PaginatedResponseDto } from '../../common/dto/paginated-response.dto';
+import { UnitType } from '../../common/enums/unit-type.enum';
 import {
   CompleteExternalProductData,
+  ExternalProductData,
   OpenFoodFactsResponse,
   OpenFoodFactsSearchProduct,
   OpenFoodFactsSearchResponse,
 } from './interfaces/open-food-facts.interfaces';
-import { ExternalProductData } from './interfaces/open-food-facts.interfaces';
-import { UnitType } from '../../common/enums/unit-type.enum';
 
 @Injectable()
 export class OpenFoodFactsService {
@@ -163,13 +164,22 @@ export class OpenFoodFactsService {
     }
   }
 
-  // Buscar produtos por nome
-  async searchProductsByName(name: string): Promise<ExternalProductData[]> {
+  // Buscar Produtos pelo nome
+  async searchProductsByName(
+    name: string,
+    page: number,
+    limit: number,
+  ): Promise<PaginatedResponseDto<ExternalProductData>> {
     this.validateSearchName(name);
 
     const params = new URLSearchParams({
+      action: 'process',
       search_terms: name,
-      page_size: '30',
+      tagtype_0: 'countries',
+      tag_contains_0: 'contains',
+      tag_0: 'Brazil',
+      page: String(page),
+      page_size: String(limit),
       json: 'true',
     });
 
@@ -177,13 +187,17 @@ export class OpenFoodFactsService {
 
     const response = await this.get<OpenFoodFactsSearchResponse>(url);
 
-    const products = [...response.data.products];
+    const products = response.data.products;
 
-    products.sort((a, b) => {
-      return this.getBrazilRelevance(b) - this.getBrazilRelevance(a);
-    });
-
-    return products.map((product) => this.mapSearchProduct(product));
+    return {
+      data: products.map((product) => this.mapSearchProduct(product)),
+      meta: {
+        page,
+        limit,
+        total: Number(response.data.count),
+        totalPages: Math.ceil(Number(response.data.count) / limit),
+      },
+    };
   }
 
   // Mapear produto da pesquisa
@@ -196,7 +210,9 @@ export class OpenFoodFactsService {
       brand: this.getFirstValue(product.brands),
       category: this.getFirstValue(product.categories),
       quantity: product.product_quantity ?? null,
-      unit: product.product_quantity_unit ?? null,
+      unit: product.product_quantity_unit
+        ? this.tryMapUnitType(product.product_quantity_unit)
+        : null,
       imageUrl: product.selected_images?.front?.display?.pt ?? null,
     };
   }
@@ -208,27 +224,5 @@ export class OpenFoodFactsService {
         'O nome do produto deve conter pelo menos 2 caracteres.',
       );
     }
-  }
-
-  // Método auxiliar para descobrir os produtos BR
-  private getBrazilRelevance(product: OpenFoodFactsSearchProduct): number {
-    const year = new Date().getFullYear();
-    const tags = product.popularity_tags ?? [];
-
-    if (tags.includes(`top-country-br-scans-${year}`)) {
-      return 100000;
-    }
-
-    const brazilTag = tags.find(
-      (tag) => tag.startsWith('top-') && tag.endsWith(`-br-scans-${year}`),
-    );
-
-    if (brazilTag) {
-      const position = Number(brazilTag.split('-')[1]);
-
-      return 100000 / position;
-    }
-
-    return product.countries_tags?.includes('en:brazil') ? 1 : 0;
   }
 }
