@@ -46,6 +46,7 @@ export function setupSwagger(app: INestApplication, port: number): void {
       'Itens da Lista de Compras',
       'Endpoints para gerenciamento dos produtos presentes nas listas de compras.',
     )
+    .addTag('Health', 'Endpoints para verificação da disponibilidade da API.')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
