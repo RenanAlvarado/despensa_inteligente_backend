@@ -29,7 +29,24 @@ export default tseslint.config(
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-floating-promises': 'warn',
       '@typescript-eslint/no-unsafe-argument': 'warn',
-      "prettier/prettier": ["error", { endOfLine: "auto" }],
+
+      'prettier/prettier': ['error', { endOfLine: 'auto' }],
+    },
+  },
+  {
+    files: ['src/config/swagger.config.ts'],
+    rules: {
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+    },
+  },
+  // DTOs e controllers utilizam decorators do class-validator.
+  {
+    files: ['src/**/*.dto.ts', 'src/**/*.controller.ts'],
+
+    rules: {
+      '@typescript-eslint/no-unsafe-call': 'off',
     },
   },
 );
