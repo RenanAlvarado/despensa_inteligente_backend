@@ -3,20 +3,24 @@ import { z } from 'zod';
 
 export function validateEnv(config: Record<string, unknown>) {
   const envSchema = z.object({
+    NODE_ENV: z
+      .enum(['development', 'production'], {
+        message: 'NODE_ENV deve ser development ou production',
+      })
+      .default('development'),
+
     PORT: z.coerce.number().int().positive('PORT deve ser um número positivo'),
 
-    DB_HOST: z.string().min(1, 'DB_HOST is required'),
+    DB_HOST: z.string().min(1, 'DB_HOST é obrigatório'),
 
     DB_PORT: z.coerce
       .number()
       .int()
-      .positive('DB_PORT must be a positive number'),
+      .positive('DB_PORT deve ser um número positivo'),
 
-    DB_USER: z.string().min(1, 'DB_USER is required'),
-
-    DB_PASSWORD: z.string().min(1, 'DB_PASSWORD is required'),
-
-    DB_NAME: z.string().min(1, 'DB_NAME is required'),
+    DB_USER: z.string().min(1, 'DB_USER é obrigatório'),
+    DB_PASSWORD: z.string().min(1, 'DB_PASSWORD é obrigatório'),
+    DB_NAME: z.string().min(1, 'DB_NAME é obrigatório'),
 
     JWT_SECRET: z
       .string()
@@ -45,7 +49,7 @@ export function validateEnv(config: Record<string, unknown>) {
   const result = envSchema.safeParse(config);
 
   if (!result.success) {
-    console.error('Environment validation failed:');
+    console.error('Falha na validação das variáveis de ambiente:');
 
     result.error.issues.forEach((issue) => {
       console.error(`- ${issue.path.join('.')}: ${issue.message}`);
