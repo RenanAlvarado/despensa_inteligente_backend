@@ -1,5 +1,6 @@
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
+import { Request, Response } from 'express';
 import helmet from 'helmet';
 import { AppModule } from './app/app.module';
 import { DatabaseExceptionFilter } from './common/filters/database-exception.filter';
@@ -37,7 +38,12 @@ async function bootstrap() {
   const port = configService.getOrThrow<number>('PORT');
 
   // Swagger
-  setupSwagger(app, port);
+  setupSwagger(app);
+
+  // Redirecionamento para Documentação
+  app.getHttpAdapter().get('/', (_req: Request, res: Response) => {
+    res.redirect(302, '/api/docs');
+  });
 
   await app.listen(port);
 }

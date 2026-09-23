@@ -11,6 +11,7 @@ import { BatchMovementsModule } from '../modules/batch-movements/batch-movements
 import { BatchesModule } from '../modules/batches/batches.module';
 import { BrandsModule } from '../modules/brands/brands.module';
 import { CategoriesModule } from '../modules/categories/categories.module';
+import { HealthModule } from '../modules/health/health.module';
 import { ProductsModule } from '../modules/products/products.module';
 import { ShopListItemsModule } from '../modules/shop-list-items/shop-list-items.module';
 import { ShopListsModule } from '../modules/shop-lists/shop-lists.module';
@@ -73,6 +74,7 @@ import { AppService } from './app.service';
     BatchMovementsModule,
     ShopListsModule,
     ShopListItemsModule,
+    HealthModule,
   ],
   controllers: [AppController],
   providers: [
