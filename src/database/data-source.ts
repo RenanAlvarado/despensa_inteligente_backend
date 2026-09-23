@@ -1,9 +1,15 @@
 import dotenv from 'dotenv';
 import { DataSource } from 'typeorm';
 
+const envFile =
+  process.env.NODE_ENV === 'production'
+    ? '.env.production.local'
+    : process.env.NODE_ENV === 'v1'
+      ? '.env.test.local'
+      : '.env';
+
 dotenv.config({
-  path:
-    process.env.NODE_ENV === 'production' ? '.env.production.local' : '.env',
+  path: envFile,
 });
 
 export default new DataSource({
