@@ -15,6 +15,12 @@ export function setupSwagger(app: INestApplication): void {
 
     Exemplo:
     Authorization: Bearer <token>
+
+    ### Especificação OpenAPI
+
+    Documento JSON disponível em:
+
+    /api/openapi.json
   `,
     )
     .setVersion('1.0')
@@ -53,6 +59,7 @@ export function setupSwagger(app: INestApplication): void {
 
   SwaggerModule.setup('docs', app, document, {
     useGlobalPrefix: true,
+    jsonDocumentUrl: 'openapi.json',
     swaggerOptions: {
       persistAuthorization: true,
     },
