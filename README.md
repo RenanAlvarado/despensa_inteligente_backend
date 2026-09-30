@@ -244,6 +244,9 @@ Com a aplicação em execução, acesse:
 
 ```text
 http://localhost:3000/api/docs
+
+OpenAPI JSON:
+http://localhost:3000/api/openapi.json
 ```
 
 A documentação permite consultar os endpoints disponíveis e testar as requisições diretamente pela interface do Swagger.
