@@ -2,6 +2,14 @@
 import { z } from 'zod';
 
 export function validateEnv(config: Record<string, unknown>) {
+  const nodeEnv =
+    typeof config.NODE_ENV === 'string' ? config.NODE_ENV : undefined;
+
+  const envFile = nodeEnv === 'production' ? '.env.production.local' : '.env';
+
+  console.log(`[ENV] Ambiente: ${nodeEnv ?? 'não definido'}`);
+  console.log(`[ENV] Arquivo selecionado: ${envFile}`);
+
   const envSchema = z.object({
     NODE_ENV: z
       .enum(['development', 'production'], {

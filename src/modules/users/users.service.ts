@@ -36,6 +36,7 @@ export class UsersService {
     const user = this.userRepository.create({
       email,
       passwordHash,
+      emailVerified: false,
       role: UserRole.USER,
     });
 

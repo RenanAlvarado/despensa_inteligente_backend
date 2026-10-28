@@ -27,6 +27,13 @@ export class User {
   passwordHash!: string;
 
   @Column({
+    name: 'email_verified',
+    type: 'boolean',
+    default: false,
+  })
+  emailVerified!: boolean;
+
+  @Column({
     type: 'enum',
     enum: UserRole,
     default: UserRole.USER,
