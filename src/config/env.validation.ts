@@ -52,6 +52,30 @@ export function validateEnv(config: Record<string, unknown>) {
       .number()
       .int()
       .positive('THROTTLE_LIMIT deve ser um número positivo'),
+
+    VERIFICATION_CODE_EXPIRATION_MINUTES: z.coerce
+      .number()
+      .int('VERIFICATION_CODE_EXPIRATION_MINUTES deve ser um número inteiro')
+      .positive(
+        'VERIFICATION_CODE_EXPIRATION_MINUTES deve ser um número positivo',
+      )
+      .default(10),
+
+    VERIFICATION_CODE_RESEND_COOLDOWN_SECONDS: z.coerce
+      .number()
+      .int(
+        'VERIFICATION_CODE_RESEND_COOLDOWN_SECONDS deve ser um número inteiro',
+      )
+      .positive(
+        'VERIFICATION_CODE_RESEND_COOLDOWN_SECONDS deve ser um número positivo',
+      )
+      .default(60),
+
+    VERIFICATION_CODE_MAX_ATTEMPTS: z.coerce
+      .number()
+      .int('VERIFICATION_CODE_MAX_ATTEMPTS deve ser um número inteiro')
+      .positive('VERIFICATION_CODE_MAX_ATTEMPTS deve ser um número positivo')
+      .default(5),
   });
 
   const result = envSchema.safeParse(config);

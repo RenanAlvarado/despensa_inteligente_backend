@@ -12,6 +12,8 @@ import { AuthService } from './auth.service';
 import { AuthResponseDto } from './dto/auth-response.dto';
 import { LoginDto } from './dto/login.dto';
 import { RegisterUserDto } from './dto/register-user.dto';
+import { ResendVerificationResponseDto } from '../verification-codes/dto/resend-verification-response.dto';
+import { ResendVerificationDto } from '../verification-codes/dto/resend-verification.dto';
 
 @ApiTags('Autenticação')
 @Controller('auth')
@@ -24,6 +26,7 @@ import { RegisterUserDto } from './dto/register-user.dto';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  // Cadastro
   @ApiOperation({
     summary: 'Cadastra um usuário',
     description:
@@ -67,5 +70,37 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
+  }
+
+  // Reenvio do código de confirmação de e-mail.
+  @ApiOperation({
+    summary: 'Solicita o reenvio do código de confirmação',
+    description:
+      'Solicita um novo código de confirmação de e-mail. A resposta é genérica para não revelar se o endereço está cadastrado.',
+  })
+  @ApiOkResponse({
+    description: 'Solicitação processada com uma mensagem genérica.',
+    type: ResendVerificationResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Dados da requisição inválidos.',
+  })
+  @ApiResponse({
+    status: 429,
+    description: 'Limite de solicitações excedido.',
+  })
+  @Throttle({
+    default: {
+      limit: 15,
+      ttl: 60_000,
+    },
+  })
+  @Post('resend-verification')
+  @HttpCode(HttpStatus.OK)
+  async resendVerification(
+    @Body() resendVerificationDto: ResendVerificationDto,
+  ): Promise<ResendVerificationResponseDto> {
+    return this.authService.resendVerification(resendVerificationDto);
   }
 }
