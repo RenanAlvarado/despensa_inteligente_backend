@@ -14,6 +14,8 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { ResendVerificationResponseDto } from '../verification-codes/dto/resend-verification-response.dto';
 import { ResendVerificationDto } from '../verification-codes/dto/resend-verification.dto';
+import { VerifyEmailDto } from '../verification-codes/dto/verify-email.dto';
+import { AuthMessageResponseDto } from './dto/auth-message-response.dto';
 
 @ApiTags('Autenticação')
 @Controller('auth')
@@ -41,7 +43,7 @@ export class AuthController {
   })
   @ApiCreatedResponse({
     description: 'Usuário cadastrado e autenticado com sucesso.',
-    type: AuthResponseDto,
+    type: AuthMessageResponseDto,
   })
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
@@ -70,6 +72,30 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
+  }
+
+  // Confirmar o e-mail do usuário.
+  @ApiOperation({
+    summary: 'Confirma o e-mail do usuário',
+    description:
+      'Valida o código recebido por e-mail e confirma a conta do usuário.',
+  })
+  @ApiOkResponse({
+    description: 'E-mail confirmado com sucesso.',
+    type: AuthResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Código inválido, expirado ou e-mail já confirmado.',
+  })
+  @ApiResponse({
+    status: 429,
+    description: 'Limite de solicitações excedido.',
+  })
+  @Post('verify-email')
+  @HttpCode(HttpStatus.OK)
+  async verifyEmail(@Body() verifyEmailDto: VerifyEmailDto) {
+    return this.authService.verifyEmail(verifyEmailDto);
   }
 
   // Reenvio do código de confirmação de e-mail.

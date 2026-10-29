@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { randomInt } from 'node:crypto';
@@ -63,6 +63,51 @@ export class VerificationCodesService {
     await this.verificationCodesRepository.save(verificationCode);
 
     return code;
+  }
+
+  // Verificar código de confirmação
+  async verifyCode(
+    userId: number,
+    purpose: VerificationCodePurpose,
+    code: string,
+  ): Promise<void> {
+    const invalidCodeMessage = 'Código inválido ou expirado.';
+
+    const verificationCode = await this.findLatestCode(userId, purpose);
+
+    if (!verificationCode || verificationCode.consumedAt) {
+      throw new BadRequestException(invalidCodeMessage);
+    }
+
+    if (verificationCode.expiresAt.getTime() <= Date.now()) {
+      throw new BadRequestException(invalidCodeMessage);
+    }
+
+    const maxAttempts = this.configService.getOrThrow<number>(
+      'VERIFICATION_CODE_MAX_ATTEMPTS',
+    );
+
+    if (verificationCode.attempts >= maxAttempts) {
+      throw new BadRequestException(invalidCodeMessage);
+    }
+
+    const isValid = await bcrypt.compare(code, verificationCode.codeHash);
+
+    if (!isValid) {
+      verificationCode.attempts += 1;
+
+      if (verificationCode.attempts >= maxAttempts) {
+        verificationCode.consumedAt = new Date();
+      }
+
+      await this.verificationCodesRepository.save(verificationCode);
+
+      throw new BadRequestException(invalidCodeMessage);
+    }
+
+    verificationCode.consumedAt = new Date();
+
+    await this.verificationCodesRepository.save(verificationCode);
   }
 
   // Verifica se o usuário pode solicitar outro código.

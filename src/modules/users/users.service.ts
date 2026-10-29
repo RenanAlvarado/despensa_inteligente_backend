@@ -136,6 +136,19 @@ export class UsersService {
     await this.userRepository.remove(user);
   }
 
+  // Confirmar e-mail
+  async verifyEmail(userId: number): Promise<void> {
+    const user = await this.findOneEntity(userId);
+
+    if (user.emailVerified) {
+      return;
+    }
+
+    user.emailVerified = true;
+
+    await this.userRepository.save(user);
+  }
+
   // Transformação para resposta
   private toResponse(user: User): UserResponseDto {
     return {

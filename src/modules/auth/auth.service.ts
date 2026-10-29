@@ -1,4 +1,8 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { UserRole } from '../users/enums/users-enums.enum';
@@ -10,6 +14,20 @@ import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { VerificationCodePurpose } from '../verification-codes/enums/verification-code-purpose.enum';
 import { VerificationCodesService } from '../verification-codes/verification-codes.service';
 import { ResendVerificationDto } from '../verification-codes/dto/resend-verification.dto';
+import { ResendVerificationResponseDto } from '../verification-codes/dto/resend-verification-response.dto';
+import { VerifyEmailDto } from '../verification-codes/dto/verify-email.dto';
+import { AuthMessageResponseDto } from './dto/auth-message-response.dto';
+
+const AUTH_MESSAGES = {
+  INVALID_CREDENTIALS: 'E-mail ou senha inválidos.',
+  EMAIL_NOT_VERIFIED: 'Confirme seu e-mail antes de entrar.',
+  INVALID_VERIFICATION_CODE: 'Código inválido ou expirado.',
+  REGISTRATION_SUCCESS:
+    'Cadastro realizado. Confirme seu e-mail utilizando o código recebido.',
+  EMAIL_VERIFICATION_SUCCESS: 'E-mail confirmado com sucesso.',
+  RESEND_VERIFICATION:
+    'Se a conta existir e estiver pendente de confirmação, você receberá um código por e-mail, caso a solicitação possa ser atendida.',
+} as const;
 
 @Injectable()
 export class AuthService {
@@ -20,30 +38,42 @@ export class AuthService {
   ) {}
 
   // Cadastro + autenticação
-  async register(registerUserDto: RegisterUserDto): Promise<AuthResponseDto> {
+  async register(
+    registerUserDto: RegisterUserDto,
+  ): Promise<AuthMessageResponseDto> {
     const user = await this.usersService.create(
       registerUserDto.email,
       registerUserDto.password,
     );
 
-    return this.generateToken(user.id, user.email, user.role);
+    // TODO: Enviar o código por e-mail usando o serviço de e-mail.
+    // Não registrar o código nos logs.
+
+    const code = await this.verificationCodesService.createCode(
+      user.id,
+      VerificationCodePurpose.EMAIL_VERIFICATION,
+    );
+
+    console.log(`[TESTE] Código de confirmação gerado: ${code}`);
+
+    return {
+      message: AUTH_MESSAGES.REGISTRATION_SUCCESS,
+    };
   }
 
   // Login retornando Jwt
   async login(loginDto: LoginDto): Promise<AuthResponseDto> {
     const user = await this.usersService.findByEmail(loginDto.email);
 
-    if (!user) {
-      throw new UnauthorizedException('E-mail ou senha inválidos.');
+    if (
+      !user ||
+      !(await bcrypt.compare(loginDto.password, user.passwordHash))
+    ) {
+      throw new UnauthorizedException(AUTH_MESSAGES.INVALID_CREDENTIALS);
     }
 
-    const passwordValid = await bcrypt.compare(
-      loginDto.password,
-      user.passwordHash,
-    );
-
-    if (!passwordValid) {
-      throw new UnauthorizedException('E-mail ou senha inválidos.');
+    if (!user.emailVerified) {
+      throw new UnauthorizedException(AUTH_MESSAGES.EMAIL_NOT_VERIFIED);
     }
 
     return this.generateToken(user.id, user.email, user.role);
@@ -52,16 +82,12 @@ export class AuthService {
   // Solicita o reenvio do código de confirmação de e-mail.
   async resendVerification(
     resendVerificationDto: ResendVerificationDto,
-  ): Promise<{ message: string }> {
-    const message =
-      'Se a conta existir e estiver pendente de confirmação, você receberá um código por e-mail, caso a solicitação possa ser atendida.';
-
-    const user = await this.usersService.findByEmail(
-      resendVerificationDto.email,
-    );
+  ): Promise<ResendVerificationResponseDto> {
+    const { email } = resendVerificationDto;
+    const user = await this.usersService.findByEmail(email);
 
     if (!user || user.emailVerified) {
-      return { message };
+      return { message: AUTH_MESSAGES.RESEND_VERIFICATION };
     }
 
     const purpose = VerificationCodePurpose.EMAIL_VERIFICATION;
@@ -76,14 +102,35 @@ export class AuthService {
       return { message: cooldownMessage };
     }
 
+    await this.verificationCodesService.createCode(user.id, purpose);
+
     const code = await this.verificationCodesService.createCode(
       user.id,
       purpose,
     );
 
-    console.log(code);
+    console.log(`[TESTE] Novo código de confirmação gerado: ${code}`);
 
-    return { message };
+    return { message: AUTH_MESSAGES.RESEND_VERIFICATION };
+  }
+
+  // Confirmação do e-mail.
+  async verifyEmail(verifyEmailDto: VerifyEmailDto): Promise<AuthResponseDto> {
+    const user = await this.usersService.findByEmail(verifyEmailDto.email);
+
+    if (!user || user.emailVerified) {
+      throw new BadRequestException(AUTH_MESSAGES.INVALID_VERIFICATION_CODE);
+    }
+
+    await this.verificationCodesService.verifyCode(
+      user.id,
+      VerificationCodePurpose.EMAIL_VERIFICATION,
+      verifyEmailDto.code,
+    );
+
+    await this.usersService.verifyEmail(user.id);
+
+    return this.generateToken(user.id, user.email, user.role);
   }
 
   // Geração do JWT
