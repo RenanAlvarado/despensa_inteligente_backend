@@ -1,6 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsNotEmpty, Matches } from 'class-validator';
 import { IsValidEmail } from '../../../common/decorators/email.decorator';
+import { Trim } from '../../../common/decorators/trim.decorator';
 
 export class VerifyEmailDto {
   @ApiProperty({
@@ -15,9 +16,10 @@ export class VerifyEmailDto {
     example: '048251',
     description: 'Código numérico de seis dígitos recebido por e-mail.',
   })
-  @IsNotEmpty({ message: 'Código é obrigatório.' })
   @Matches(/^\d{6}$/, {
     message: 'O código deve conter exatamente seis dígitos.',
   })
+  @Trim()
+  @IsNotEmpty({ message: 'Código é obrigatório.' })
   code!: string;
 }

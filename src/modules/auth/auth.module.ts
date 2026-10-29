@@ -6,11 +6,13 @@ import { UsersModule } from '../users/users.module';
 import { JwtModule } from '@nestjs/jwt';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { VerificationCodesModule } from '../verification-codes/verification-codes.module';
+import { EmailsModule } from '../emails/emails.module';
 
 @Module({
   imports: [
     UsersModule,
     VerificationCodesModule,
+    EmailsModule,
     JwtModule.registerAsync({
       inject: [ConfigService],
 

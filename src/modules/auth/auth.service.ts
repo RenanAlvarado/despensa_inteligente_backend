@@ -17,6 +17,7 @@ import { ResendVerificationDto } from '../verification-codes/dto/resend-verifica
 import { ResendVerificationResponseDto } from '../verification-codes/dto/resend-verification-response.dto';
 import { VerifyEmailDto } from '../verification-codes/dto/verify-email.dto';
 import { AuthMessageResponseDto } from './dto/auth-message-response.dto';
+import { EmailsService } from '../emails/emails.service';
 
 const AUTH_MESSAGES = {
   INVALID_CREDENTIALS: 'E-mail ou senha inválidos.',
@@ -35,6 +36,7 @@ export class AuthService {
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     private readonly verificationCodesService: VerificationCodesService,
+    private readonly emailService: EmailsService,
   ) {}
 
   // Cadastro + autenticação
@@ -46,15 +48,12 @@ export class AuthService {
       registerUserDto.password,
     );
 
-    // TODO: Enviar o código por e-mail usando o serviço de e-mail.
-    // Não registrar o código nos logs.
-
     const code = await this.verificationCodesService.createCode(
       user.id,
       VerificationCodePurpose.EMAIL_VERIFICATION,
     );
 
-    console.log(`[TESTE] Código de confirmação gerado: ${code}`);
+    await this.emailService.sendVerificationCode(user.email, code);
 
     return {
       message: AUTH_MESSAGES.REGISTRATION_SUCCESS,
@@ -109,7 +108,7 @@ export class AuthService {
       purpose,
     );
 
-    console.log(`[TESTE] Novo código de confirmação gerado: ${code}`);
+    await this.emailService.sendVerificationCode(user.email, code);
 
     return { message: AUTH_MESSAGES.RESEND_VERIFICATION };
   }

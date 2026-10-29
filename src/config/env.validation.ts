@@ -76,6 +76,12 @@ export function validateEnv(config: Record<string, unknown>) {
       .int('VERIFICATION_CODE_MAX_ATTEMPTS deve ser um número inteiro')
       .positive('VERIFICATION_CODE_MAX_ATTEMPTS deve ser um número positivo')
       .default(5),
+
+    RESEND_API_KEY: z.string().min(1, 'RESEND_API_KEY é obrigatória'),
+
+    EMAIL_FROM: z
+      .string()
+      .email('EMAIL_FROM deve ser um endereço de e-mail válido'),
   });
 
   const result = envSchema.safeParse(config);
