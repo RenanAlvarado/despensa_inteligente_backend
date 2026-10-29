@@ -1,11 +1,20 @@
-import { Body, Controller, HttpCode, HttpStatus, Post } from '@nestjs/common';
 import {
+  Body,
+  Controller,
+  Headers,
+  HttpCode,
+  HttpStatus,
+  Post,
+} from '@nestjs/common';
+import {
+  ApiBadRequestResponse,
   ApiConflictResponse,
   ApiCreatedResponse,
   ApiOkResponse,
   ApiOperation,
   ApiResponse,
   ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
@@ -16,6 +25,10 @@ import { ResendVerificationResponseDto } from '../verification-codes/dto/resend-
 import { ResendVerificationDto } from '../verification-codes/dto/resend-verification.dto';
 import { VerifyEmailDto } from '../verification-codes/dto/verify-email.dto';
 import { AuthMessageResponseDto } from './dto/auth-message-response.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { VerifyPasswordResetCodeDto } from '../verification-codes/dto/verify-password-reset-code.dto';
+import { PasswordResetTokenResponseDto } from './dto/password-reset-token-response.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @ApiTags('Autenticação')
 @Controller('auth')
@@ -74,28 +87,72 @@ export class AuthController {
     return this.authService.login(loginDto);
   }
 
-  // Confirmar o e-mail do usuário.
+  // Solicitar recuperação de senha.
   @ApiOperation({
-    summary: 'Confirma o e-mail do usuário',
+    summary: 'Solicita recuperação de senha',
     description:
-      'Valida o código recebido por e-mail e confirma a conta do usuário.',
+      'Solicita o envio de um código de recuperação. A resposta não revela se o e-mail está cadastrado.',
   })
   @ApiOkResponse({
-    description: 'E-mail confirmado com sucesso.',
-    type: AuthResponseDto,
+    description: 'Solicitação processada com uma mensagem genérica.',
+    type: AuthMessageResponseDto,
   })
   @ApiResponse({
     status: 400,
-    description: 'Código inválido, expirado ou e-mail já confirmado.',
+    description: 'Dados da requisição inválidos.',
   })
   @ApiResponse({
     status: 429,
     description: 'Limite de solicitações excedido.',
   })
-  @Post('verify-email')
+  @Post('forgot-password')
   @HttpCode(HttpStatus.OK)
-  async verifyEmail(@Body() verifyEmailDto: VerifyEmailDto) {
-    return this.authService.verifyEmail(verifyEmailDto);
+  async forgotPassword(
+    @Body() forgotPasswordDto: ForgotPasswordDto,
+  ): Promise<AuthMessageResponseDto> {
+    return this.authService.forgotPassword(forgotPasswordDto);
+  }
+
+  // Verificar Código de Redefinição de Senha
+  @Post('verify-password-reset-code')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Verificar código de recuperação de senha',
+    description:
+      'Valida o código enviado por e-mail para iniciar a redefinição de senha.',
+  })
+  @ApiOkResponse({
+    description: 'Código validado com sucesso.',
+    type: PasswordResetTokenResponseDto,
+  })
+  @ApiBadRequestResponse({
+    description: 'Código inválido, expirado ou e-mail não elegível.',
+  })
+  async verifyPasswordResetCode(
+    @Body() dto: VerifyPasswordResetCodeDto,
+  ): Promise<PasswordResetTokenResponseDto> {
+    return this.authService.verifyPasswordResetCode(dto);
+  }
+
+  // Redefinir senha
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({
+    summary: 'Redefinir senha com token de recuperação',
+    description: 'Informe o resetToken no cabeçalho X-Password-Reset-Token.',
+  })
+  @ApiOkResponse({
+    description: 'Senha redefinida com sucesso.',
+    type: AuthMessageResponseDto,
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Token de recuperação inválido ou expirado.',
+  })
+  async resetPassword(
+    @Body() dto: ResetPasswordDto,
+    @Headers('x-password-reset-token') resetToken?: string,
+  ): Promise<AuthMessageResponseDto> {
+    return this.authService.resetPassword(dto, resetToken);
   }
 
   // Reenvio do código de confirmação de e-mail.
@@ -128,5 +185,29 @@ export class AuthController {
     @Body() resendVerificationDto: ResendVerificationDto,
   ): Promise<ResendVerificationResponseDto> {
     return this.authService.resendVerification(resendVerificationDto);
+  }
+
+  // Confirmar o e-mail do usuário.
+  @ApiOperation({
+    summary: 'Confirma o e-mail do usuário',
+    description:
+      'Valida o código recebido por e-mail e confirma a conta do usuário.',
+  })
+  @ApiOkResponse({
+    description: 'E-mail confirmado com sucesso.',
+    type: AuthResponseDto,
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Código inválido, expirado ou e-mail já confirmado.',
+  })
+  @ApiResponse({
+    status: 429,
+    description: 'Limite de solicitações excedido.',
+  })
+  @Post('verify-email')
+  @HttpCode(HttpStatus.OK)
+  async verifyEmail(@Body() verifyEmailDto: VerifyEmailDto) {
+    return this.authService.verifyEmail(verifyEmailDto);
   }
 }

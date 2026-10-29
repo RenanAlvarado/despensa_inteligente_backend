@@ -41,6 +41,19 @@ export function validateEnv(config: Record<string, unknown>) {
         'JWT_EXPIRES_IN deve possuir um formato válido, como 1h, 1d ou 7d',
       ),
 
+    PASSWORD_RESET_JWT_SECRET: z
+      .string()
+      .min(
+        32,
+        'PASSWORD_RESET_JWT_SECRET deve possuir pelo menos 32 caracteres',
+      ),
+
+    PASSWORD_RESET_JWT_EXPIRES_IN: z.coerce
+      .number()
+      .int('PASSWORD_RESET_JWT_EXPIRES_IN deve ser um número inteiro')
+      .positive('PASSWORD_RESET_JWT_EXPIRES_IN deve ser um número positivo')
+      .default(600),
+
     CORS_ORIGIN: z.string().url('CORS_ORIGIN deve ser uma URL válida'),
 
     THROTTLE_TTL: z.coerce

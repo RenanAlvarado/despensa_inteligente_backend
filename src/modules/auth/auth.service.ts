@@ -18,8 +18,16 @@ import { ResendVerificationResponseDto } from '../verification-codes/dto/resend-
 import { VerifyEmailDto } from '../verification-codes/dto/verify-email.dto';
 import { AuthMessageResponseDto } from './dto/auth-message-response.dto';
 import { EmailsService } from '../emails/emails.service';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { VerifyPasswordResetCodeDto } from '../verification-codes/dto/verify-password-reset-code.dto';
+import { ConfigService } from '@nestjs/config';
+import { PasswordResetTokenResponseDto } from './dto/password-reset-token-response.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import { PasswordResetTokenPayload } from './interfaces/password-reset-token-payload.interface';
 
 const AUTH_MESSAGES = {
+  FORGOT_PASSWORD:
+    'Se a conta existir e estiver apta para recuperação, você receberá as instruções por e-mail.',
   INVALID_CREDENTIALS: 'E-mail ou senha inválidos.',
   EMAIL_NOT_VERIFIED: 'Confirme seu e-mail antes de entrar.',
   INVALID_VERIFICATION_CODE: 'Código inválido ou expirado.',
@@ -37,6 +45,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly verificationCodesService: VerificationCodesService,
     private readonly emailService: EmailsService,
+    private readonly configService: ConfigService,
   ) {}
 
   // Cadastro + autenticação
@@ -78,6 +87,119 @@ export class AuthService {
     return this.generateToken(user.id, user.email, user.role);
   }
 
+  // Solicita a recuperação de senha.
+  async forgotPassword(
+    forgotPasswordDto: ForgotPasswordDto,
+  ): Promise<AuthMessageResponseDto> {
+    const { email } = forgotPasswordDto;
+    const user = await this.usersService.findByEmail(email);
+
+    if (!user || !user.emailVerified) {
+      return { message: AUTH_MESSAGES.FORGOT_PASSWORD };
+    }
+
+    const purpose = VerificationCodePurpose.PASSWORD_RESET;
+
+    const cooldownMessage =
+      await this.verificationCodesService.getResendCooldownMessage(
+        user.id,
+        purpose,
+      );
+
+    if (cooldownMessage) {
+      return { message: AUTH_MESSAGES.FORGOT_PASSWORD };
+    }
+
+    const code = await this.verificationCodesService.createCode(
+      user.id,
+      purpose,
+    );
+
+    await this.emailService.sendPasswordResetCode(user.email, code);
+
+    return { message: AUTH_MESSAGES.FORGOT_PASSWORD };
+  }
+
+  // Verificar Código de Redefinição de Email
+  async verifyPasswordResetCode(
+    dto: VerifyPasswordResetCodeDto,
+  ): Promise<PasswordResetTokenResponseDto> {
+    const user = await this.usersService.findByEmail(dto.email);
+
+    if (!user || !user.emailVerified) {
+      throw new BadRequestException(AUTH_MESSAGES.INVALID_VERIFICATION_CODE);
+    }
+
+    await this.verificationCodesService.verifyCode(
+      user.id,
+      VerificationCodePurpose.PASSWORD_RESET,
+      dto.code,
+    );
+
+    const resetToken = await this.jwtService.signAsync(
+      {
+        sub: user.id,
+        purpose: 'password_reset',
+      },
+      {
+        secret: this.configService.getOrThrow<string>(
+          'PASSWORD_RESET_JWT_SECRET',
+        ),
+        expiresIn: this.configService.getOrThrow<number>(
+          'PASSWORD_RESET_JWT_EXPIRES_IN',
+        ),
+      },
+    );
+
+    return { resetToken };
+  }
+
+  // Redefinir senha
+  async resetPassword(
+    resetPasswordDto: ResetPasswordDto,
+    resetTokenHeader: string | undefined,
+  ): Promise<AuthMessageResponseDto> {
+    if (!resetTokenHeader?.trim()) {
+      throw new UnauthorizedException('Token de recuperação não informado.');
+    }
+
+    const resetToken = resetTokenHeader.trim();
+
+    let payload: PasswordResetTokenPayload;
+
+    try {
+      payload = await this.jwtService.verifyAsync<PasswordResetTokenPayload>(
+        resetToken,
+        {
+          secret: this.configService.getOrThrow<string>(
+            'PASSWORD_RESET_JWT_SECRET',
+          ),
+        },
+      );
+    } catch {
+      throw new UnauthorizedException(
+        'Token de recuperação inválido ou expirado.',
+      );
+    }
+
+    if (
+      payload.purpose !== 'password_reset' ||
+      !Number.isInteger(payload.sub) ||
+      payload.sub <= 0
+    ) {
+      throw new UnauthorizedException('Token de recuperação inválido.');
+    }
+
+    await this.usersService.resetPassword(
+      payload.sub,
+      resetPasswordDto.password,
+    );
+
+    return {
+      message: 'Senha redefinida com sucesso. Faça login com sua nova senha.',
+    };
+  }
+
   // Solicita o reenvio do código de confirmação de e-mail.
   async resendVerification(
     resendVerificationDto: ResendVerificationDto,
@@ -100,8 +222,6 @@ export class AuthService {
     if (cooldownMessage) {
       return { message: cooldownMessage };
     }
-
-    await this.verificationCodesService.createCode(user.id, purpose);
 
     const code = await this.verificationCodesService.createCode(
       user.id,

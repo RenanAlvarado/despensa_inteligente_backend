@@ -129,6 +129,15 @@ export class UsersService {
     };
   }
 
+  // Resetar senha
+  async resetPassword(userId: number, password: string): Promise<void> {
+    const user = await this.findOneEntity(userId);
+
+    user.passwordHash = await bcrypt.hash(password, 10);
+
+    await this.userRepository.save(user);
+  }
+
   // Excluir
   async remove(userId: number): Promise<void> {
     const user = await this.findOneEntity(userId);
