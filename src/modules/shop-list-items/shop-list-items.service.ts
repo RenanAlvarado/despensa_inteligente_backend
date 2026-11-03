@@ -24,6 +24,7 @@ export class ShopListItemsService {
     @InjectRepository(ShopListItem)
     private readonly shopListItemRepository: Repository<ShopListItem>,
 
+    @Inject(forwardRef(() => ShopListsService))
     private readonly shopListsService: ShopListsService,
 
     @Inject(forwardRef(() => ProductsService))
@@ -243,6 +244,22 @@ export class ShopListItemsService {
     }
 
     return ShoppingListItemStatus.COMPLETED;
+  }
+
+  // Calcular o total gasto em uma lista de compras
+  async calculatePurchasedTotal(shopListId: number): Promise<number> {
+    const result = await this.shopListItemRepository
+      .createQueryBuilder('item')
+      .select(
+        'COALESCE(SUM(item.unitPrice * item.purchasedQuantity), 0)',
+        'purchasedTotal',
+      )
+      .where('item.shoppingListId = :shopListId', {
+        shopListId,
+      })
+      .getRawOne<{ purchasedTotal: string }>();
+
+    return Number(Number(result?.purchasedTotal ?? 0).toFixed(2));
   }
 
   // Contar itens de lista de compras por produto

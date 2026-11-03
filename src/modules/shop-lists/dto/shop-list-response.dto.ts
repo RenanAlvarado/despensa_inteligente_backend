@@ -1,5 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { ShoppingListStatus } from '../enums/shop-lists.enums';
+import {
+  ShopListBudgetStatus,
+  ShoppingListStatus,
+} from '../enums/shop-lists.enums';
 
 export class ShoppingListResponseDto {
   @ApiProperty({
@@ -27,4 +30,25 @@ export class ShoppingListResponseDto {
     nullable: true,
   })
   budgetLimit!: number | null;
+
+  @ApiProperty({
+    example: 125.75,
+    description: 'Valor total já gasto com os itens comprados.',
+  })
+  spentTotal!: number;
+
+  @ApiPropertyOptional({
+    example: 124.25,
+    description:
+      'Diferença entre o orçamento e o valor gasto. Negativa quando ultrapassado.',
+    nullable: true,
+  })
+  budgetDifference!: number | null;
+
+  @ApiProperty({
+    enum: ShopListBudgetStatus,
+    example: ShopListBudgetStatus.WITHIN_BUDGET,
+    description: 'Situação atual do orçamento da lista.',
+  })
+  budgetStatus!: ShopListBudgetStatus;
 }

@@ -36,6 +36,7 @@ export class UsersService {
     const user = this.userRepository.create({
       email,
       passwordHash,
+      emailVerified: false,
       role: UserRole.USER,
     });
 
@@ -128,11 +129,33 @@ export class UsersService {
     };
   }
 
+  // Resetar senha
+  async resetPassword(userId: number, password: string): Promise<void> {
+    const user = await this.findOneEntity(userId);
+
+    user.passwordHash = await bcrypt.hash(password, 10);
+
+    await this.userRepository.save(user);
+  }
+
   // Excluir
   async remove(userId: number): Promise<void> {
     const user = await this.findOneEntity(userId);
 
     await this.userRepository.remove(user);
+  }
+
+  // Confirmar e-mail
+  async verifyEmail(userId: number): Promise<void> {
+    const user = await this.findOneEntity(userId);
+
+    if (user.emailVerified) {
+      return;
+    }
+
+    user.emailVerified = true;
+
+    await this.userRepository.save(user);
   }
 
   // Transformação para resposta

@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  forwardRef,
+  Inject,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { PaginatedResponseDto } from '../../common/dto/paginated-response.dto';
@@ -9,7 +14,11 @@ import { FindShopListsQueryDto } from './dto/find-shop-lists-query.dto';
 import { ShoppingListResponseDto } from './dto/shop-list-response.dto';
 import { UpdateShopListDto } from './dto/update-shop-list.dto';
 import { ShoppingList } from './entities/shop-list.entity';
-import { ShoppingListStatus } from './enums/shop-lists.enums';
+import {
+  ShopListBudgetStatus,
+  ShoppingListStatus,
+} from './enums/shop-lists.enums';
+import { ShopListItemsService } from '../shop-list-items/shop-list-items.service';
 
 @Injectable()
 export class ShopListsService {
@@ -18,6 +27,9 @@ export class ShopListsService {
     private readonly shoppingListRepository: Repository<ShoppingList>,
 
     private readonly usersService: UsersService,
+
+    @Inject(forwardRef(() => ShopListItemsService))
+    private readonly shopListItemsService: ShopListItemsService,
   ) {}
 
   // Criar Lista de Compras
@@ -79,7 +91,9 @@ export class ShopListsService {
     const [shoppingLists, total] = await queryBuilder.getManyAndCount();
 
     return {
-      data: shoppingLists.map((shoppingList) => this.toResponse(shoppingList)),
+      data: await Promise.all(
+        shoppingLists.map((shoppingList) => this.toResponse(shoppingList)),
+      ),
       meta: {
         page,
         limit,
@@ -147,8 +161,57 @@ export class ShopListsService {
     await this.shoppingListRepository.remove(shoppingList);
   }
 
+  // Calcular Status de diferença da lista
+  private async calculateBudget(shoppingList: ShoppingList): Promise<{
+    spentTotal: number;
+    budgetDifference: number | null;
+    budgetStatus: ShopListBudgetStatus;
+  }> {
+    const spentTotal = await this.shopListItemsService.calculatePurchasedTotal(
+      shoppingList.id,
+    );
+
+    const budgetLimit =
+      shoppingList.budgetLimit !== null
+        ? Number(shoppingList.budgetLimit)
+        : null;
+
+    if (budgetLimit === null) {
+      return {
+        spentTotal,
+        budgetDifference: null,
+        budgetStatus: ShopListBudgetStatus.NO_BUDGET,
+      };
+    }
+
+    const budgetDifference = Number((budgetLimit - spentTotal).toFixed(2));
+
+    let budgetStatus: ShopListBudgetStatus;
+
+    if (budgetDifference < 0) {
+      budgetStatus = ShopListBudgetStatus.OVER_BUDGET;
+    } else if (budgetDifference === 0) {
+      budgetStatus = ShopListBudgetStatus.LIMIT_REACHED;
+    } else if (spentTotal >= budgetLimit * 0.8) {
+      budgetStatus = ShopListBudgetStatus.NEAR_LIMIT;
+    } else {
+      budgetStatus = ShopListBudgetStatus.WITHIN_BUDGET;
+    }
+
+    return {
+      spentTotal,
+      budgetDifference,
+      budgetStatus,
+    };
+  }
+
   // Formatar resposta
-  private toResponse(shoppingList: ShoppingList): ShoppingListResponseDto {
+
+  private async toResponse(
+    shoppingList: ShoppingList,
+  ): Promise<ShoppingListResponseDto> {
+    const budget = await this.calculateBudget(shoppingList);
+
     return {
       id: shoppingList.id,
       name: shoppingList.name,
@@ -157,6 +220,7 @@ export class ShopListsService {
         shoppingList.budgetLimit !== null
           ? Number(shoppingList.budgetLimit)
           : null,
+      ...budget,
     };
   }
 }

@@ -3,6 +3,10 @@
 /node_modules
 /build
 
+
+# Diagram Visualization Configurations
+*.dbdiagram
+
 # Logs
 logs
 *.log
@@ -34,6 +38,7 @@ lerna-debug.log*
 !.vscode/tasks.json
 !.vscode/launch.json
 !.vscode/extensions.json
+settings.json
 
 # dotenv environment variable files
 .env
