@@ -2,3 +2,11 @@ export enum ShoppingListStatus {
   OPEN = 'ABERTA',
   COMPLETED = 'CONCLUIDA',
 }
+
+export enum ShopListBudgetStatus {
+  WITHIN_BUDGET = 'DENTRO_DO_ORÇAMENTO',
+  NEAR_LIMIT = 'PRÓXIMO_DO_LIMITE',
+  LIMIT_REACHED = 'LIMITE_ATINGIDO',
+  OVER_BUDGET = 'ORÇAMENTO_ULTRAPASSADO',
+  NO_BUDGET = 'SEM_ORÇAMENTO',
+}

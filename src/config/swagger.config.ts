@@ -62,6 +62,9 @@ export function setupSwagger(app: INestApplication): void {
     jsonDocumentUrl: 'openapi.json',
     swaggerOptions: {
       persistAuthorization: true,
+      filter: true,
+      displayRequestDuration: true,
+      deepLinking: true,
     },
   });
 }
