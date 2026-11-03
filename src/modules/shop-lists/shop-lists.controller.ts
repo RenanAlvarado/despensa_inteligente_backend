@@ -14,6 +14,7 @@ import {
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiConflictResponse,
   ApiCreatedResponse,
   ApiNoContentResponse,
   ApiNotFoundResponse,
@@ -48,6 +49,9 @@ export class ShopListsController {
   @ApiCreatedResponse({
     description: 'Lista de compras criada com sucesso.',
     type: ShoppingListResponseDto,
+  })
+  @ApiConflictResponse({
+    description: 'O usuário já possui uma lista aberta com esse nome.',
   })
   @Post()
   create(
@@ -108,6 +112,9 @@ export class ShopListsController {
     type: ShoppingListResponseDto,
   })
   @ApiNotFoundResponse({ description: 'Lista de compras não encontrada.' })
+  @ApiConflictResponse({
+    description: 'O usuário já possui outra lista aberta com esse nome.',
+  })
   @Put(':id')
   update(
     @Param('id', ParseIdPipe) id: number,

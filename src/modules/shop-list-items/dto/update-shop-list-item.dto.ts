@@ -1,4 +1,4 @@
-import { PartialType } from '@nestjs/mapped-types';
+import { PartialType } from '@nestjs/swagger';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsInt, IsNumber, IsOptional, Min } from 'class-validator';
 import { CreateShopListItemDto } from './create-shop-list-item.dto';
