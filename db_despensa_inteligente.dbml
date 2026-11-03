@@ -1,0 +1,115 @@
+
+Project despensa_inteligente {
+  database_type: 'MySQL'
+  Note: 'Documentação do schema da Despensa Inteligente'
+}
+
+Table users {
+  id int [pk, increment, not null]
+  email varchar(255) [unique, not null]
+  password_hash varchar(255) [not null]
+  email_verified boolean [not null, default: false]
+  role enum('USER', 'ADMIN') [not null, default: 'USER']
+  created_at datetime(6) [not null, default: `CURRENT_TIMESTAMP(6)`]
+  updated_at datetime(6) [not null, default: `CURRENT_TIMESTAMP(6)`, note: 'ON UPDATE CURRENT_TIMESTAMP(6)']
+}
+
+
+Table verification_codes {
+  id int [pk, increment, not null]
+  user_id int [not null]
+  code_hash varchar(255) [not null]
+  purpose enum('EMAIL_VERIFICATION', 'PASSWORD_RESET') [not null]
+  expires_at datetime(6) [not null]
+  attempts int [not null, default: 0]
+  consumed_at datetime(6)
+  created_at datetime(6) [not null, default: `CURRENT_TIMESTAMP(6)`]
+
+  indexes {
+    (user_id, purpose) [name: 'IDX_verification_codes_user_purpose']
+    expires_at [name: 'IDX_verification_codes_expires_at']
+  }
+}
+
+Table shopping_lists {
+  id int [pk, increment, not null]
+  user_id int [not null]
+  name varchar(150) [not null]
+  status enum('ABERTA', 'CONCLUIDA') [not null, default: 'ABERTA']
+  budget_limit decimal(10,2)
+  created_at datetime(6) [not null, default: `CURRENT_TIMESTAMP(6)`]
+  updated_at datetime(6) [not null, default: `CURRENT_TIMESTAMP(6)`, note: 'ON UPDATE CURRENT_TIMESTAMP(6)']
+}
+
+Table shopping_list_items {
+  id int [pk, increment, not null]
+  shopping_list_id int [not null]
+  product_id int [not null]
+  requested_quantity int [not null]
+  purchased_quantity int [not null, default: 0]
+  status enum('PENDENTE', 'PARCIAL', 'CONCLUIDO') [not null, default: 'PENDENTE']
+  notes text
+  unit_price decimal(10,2)
+  created_at datetime(6) [not null, default: `CURRENT_TIMESTAMP(6)`]
+  updated_at datetime(6) [not null, default: `CURRENT_TIMESTAMP(6)`, note: 'ON UPDATE CURRENT_TIMESTAMP(6)']
+}
+
+Table products {
+  id int [pk, increment, not null]
+  brand_id int
+  category_id int
+  name varchar(150) [not null]
+  barcode varchar(100) [unique]
+  image_url varchar(500)
+  unit_type enum('KG', 'G', 'L', 'ML', 'UN')
+  unit_quantity int
+  source enum('MANUAL', 'OPEN_FOOD_FACTS') [not null]
+  created_at datetime(6) [not null, default: `CURRENT_TIMESTAMP(6)`]
+  updated_at datetime(6) [not null, default: `CURRENT_TIMESTAMP(6)`, note: 'ON UPDATE CURRENT_TIMESTAMP(6)']
+}
+
+Table categories {
+  id int [pk, increment, not null]
+  name varchar(100) [unique, not null]
+  created_at datetime(6) [not null, default: `CURRENT_TIMESTAMP(6)`]
+  updated_at datetime(6) [not null, default: `CURRENT_TIMESTAMP(6)`, note: 'ON UPDATE CURRENT_TIMESTAMP(6)']
+}
+
+Table brands {
+  id int [pk, increment, not null]
+  name varchar(100) [unique, not null]
+  created_at datetime(6) [not null, default: `CURRENT_TIMESTAMP(6)`]
+  updated_at datetime(6) [not null, default: `CURRENT_TIMESTAMP(6)`, note: 'ON UPDATE CURRENT_TIMESTAMP(6)']
+}
+
+Table batches {
+  id int [pk, increment, not null]
+  user_id int [not null]
+  product_id int [not null]
+  expiration_date date [not null]
+  purchase_date date [not null]
+  quantity int [not null]
+  unit_price decimal(10,2) [not null]
+  notes text
+  created_at datetime(6) [not null, default: `CURRENT_TIMESTAMP(6)`]
+  updated_at datetime(6) [not null, default: `CURRENT_TIMESTAMP(6)`, note: 'ON UPDATE CURRENT_TIMESTAMP(6)']
+}
+
+Table batch_movements {
+  id int [pk, increment, not null]
+  batch_id int [not null]
+  type enum('ENTRADA', 'CONSUMO', 'DESCARTE', 'AJUSTE') [not null]
+  reason varchar(255)
+  quantity int [not null]
+  created_at datetime(6) [not null, default: `CURRENT_TIMESTAMP(6)`]
+}
+
+Ref: shopping_lists.user_id > users.id
+Ref: shopping_list_items.shopping_list_id > shopping_lists.id
+Ref: shopping_list_items.product_id > products.id
+Ref: products.brand_id > brands.id
+Ref: products.category_id > categories.id
+Ref: batches.user_id > users.id
+Ref: batches.product_id > products.id
+Ref: batch_movements.batch_id > batches.id
+Ref: verification_codes.user_id > users.id [delete: cascade]

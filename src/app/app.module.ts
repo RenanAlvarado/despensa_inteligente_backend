@@ -18,6 +18,7 @@ import { ShopListsModule } from '../modules/shop-lists/shop-lists.module';
 import { UsersModule } from '../modules/users/users.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { VerificationCodesModule } from '../modules/verification-codes/verification-codes.module';
 
 @Module({
   imports: [
@@ -75,6 +76,7 @@ import { AppService } from './app.service';
     ShopListsModule,
     ShopListItemsModule,
     HealthModule,
+    VerificationCodesModule,
   ],
   controllers: [AppController],
   providers: [

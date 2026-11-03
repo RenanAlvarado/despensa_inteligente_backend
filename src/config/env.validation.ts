@@ -2,6 +2,14 @@
 import { z } from 'zod';
 
 export function validateEnv(config: Record<string, unknown>) {
+  const nodeEnv =
+    typeof config.NODE_ENV === 'string' ? config.NODE_ENV : undefined;
+
+  const envFile = nodeEnv === 'production' ? '.env.production.local' : '.env';
+
+  console.log(`[ENV] Ambiente: ${nodeEnv ?? 'não definido'}`);
+  console.log(`[ENV] Arquivo selecionado: ${envFile}`);
+
   const envSchema = z.object({
     NODE_ENV: z
       .enum(['development', 'production'], {
@@ -33,6 +41,19 @@ export function validateEnv(config: Record<string, unknown>) {
         'JWT_EXPIRES_IN deve possuir um formato válido, como 1h, 1d ou 7d',
       ),
 
+    PASSWORD_RESET_JWT_SECRET: z
+      .string()
+      .min(
+        32,
+        'PASSWORD_RESET_JWT_SECRET deve possuir pelo menos 32 caracteres',
+      ),
+
+    PASSWORD_RESET_JWT_EXPIRES_IN: z.coerce
+      .number()
+      .int('PASSWORD_RESET_JWT_EXPIRES_IN deve ser um número inteiro')
+      .positive('PASSWORD_RESET_JWT_EXPIRES_IN deve ser um número positivo')
+      .default(600),
+
     CORS_ORIGIN: z.string().url('CORS_ORIGIN deve ser uma URL válida'),
 
     THROTTLE_TTL: z.coerce
@@ -44,6 +65,36 @@ export function validateEnv(config: Record<string, unknown>) {
       .number()
       .int()
       .positive('THROTTLE_LIMIT deve ser um número positivo'),
+
+    VERIFICATION_CODE_EXPIRATION_MINUTES: z.coerce
+      .number()
+      .int('VERIFICATION_CODE_EXPIRATION_MINUTES deve ser um número inteiro')
+      .positive(
+        'VERIFICATION_CODE_EXPIRATION_MINUTES deve ser um número positivo',
+      )
+      .default(10),
+
+    VERIFICATION_CODE_RESEND_COOLDOWN_SECONDS: z.coerce
+      .number()
+      .int(
+        'VERIFICATION_CODE_RESEND_COOLDOWN_SECONDS deve ser um número inteiro',
+      )
+      .positive(
+        'VERIFICATION_CODE_RESEND_COOLDOWN_SECONDS deve ser um número positivo',
+      )
+      .default(60),
+
+    VERIFICATION_CODE_MAX_ATTEMPTS: z.coerce
+      .number()
+      .int('VERIFICATION_CODE_MAX_ATTEMPTS deve ser um número inteiro')
+      .positive('VERIFICATION_CODE_MAX_ATTEMPTS deve ser um número positivo')
+      .default(5),
+
+    RESEND_API_KEY: z.string().min(1, 'RESEND_API_KEY é obrigatória'),
+
+    EMAIL_FROM: z
+      .string()
+      .email('EMAIL_FROM deve ser um endereço de e-mail válido'),
   });
 
   const result = envSchema.safeParse(config);
