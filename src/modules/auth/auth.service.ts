@@ -81,7 +81,9 @@ export class AuthService {
     }
 
     if (!user.emailVerified) {
-      throw new UnauthorizedException(AUTH_MESSAGES.EMAIL_NOT_VERIFIED);
+      return {
+        emailVerified: false,
+      };
     }
 
     return this.generateToken(user.id, user.email, user.role);
@@ -265,9 +267,9 @@ export class AuthService {
     };
 
     const token = await this.jwtService.signAsync(payload);
-
     return {
       token,
+      emailVerified: true,
     };
   }
 }

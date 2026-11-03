@@ -45,7 +45,7 @@ export class AuthController {
   @ApiOperation({
     summary: 'Cadastra um usuário',
     description:
-      'Cria um novo usuário e realiza a autenticação automaticamente, retornando um token JWT.',
+      'Cria uma nova conta e envia um código de confirmação para o e-mail informado. A conta precisa ser verificada antes do login.',
   })
   @ApiConflictResponse({
     description: 'Já existe um usuário cadastrado com esse email.',
@@ -55,7 +55,8 @@ export class AuthController {
     description: 'Excesso de chamadas.',
   })
   @ApiCreatedResponse({
-    description: 'Usuário cadastrado e autenticado com sucesso.',
+    description:
+      'Usuário cadastrado com sucesso. Código de confirmação enviado por e-mail.',
     type: AuthMessageResponseDto,
   })
   @Post('register')
@@ -67,7 +68,8 @@ export class AuthController {
   // Login
   @ApiOperation({
     summary: 'Realiza login',
-    description: 'Autentica o usuário e retorna um token JWT.',
+    description:
+      'Autentica o usuário. Se o e-mail estiver confirmado, retorna um token JWT. Caso contrário, retorna emailVerified: false sem emitir um token.',
   })
   @ApiResponse({
     status: 401,
@@ -78,7 +80,8 @@ export class AuthController {
     description: 'Excesso de chamadas',
   })
   @ApiOkResponse({
-    description: 'Login realizado com sucesso.',
+    description:
+      'Credenciais válidas. A resposta indica se o e-mail foi confirmado e inclui um token JWT somente para usuários verificados.',
     type: AuthResponseDto,
   })
   @Post('login')
