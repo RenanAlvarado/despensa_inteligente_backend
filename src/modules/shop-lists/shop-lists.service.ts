@@ -1,4 +1,5 @@
 import {
+  ConflictException,
   forwardRef,
   Inject,
   Injectable,
@@ -38,6 +39,8 @@ export class ShopListsService {
     createShoppingListDto: CreateShopListDto,
   ): Promise<ShoppingListResponseDto> {
     await this.usersService.findOneEntity(userId);
+
+    await this.validateUniqueOpenListName(userId, createShoppingListDto.name);
 
     const shoppingList = this.shoppingListRepository.create({
       userId,
@@ -133,6 +136,18 @@ export class ShopListsService {
   ): Promise<ShoppingListResponseDto> {
     const shoppingList = await this.findOneEntity(id, userId);
 
+    const newName = updateShopListDto.name ?? shoppingList.name;
+
+    const newStatus = updateShopListDto.status ?? shoppingList.status;
+
+    if (
+      newStatus === ShoppingListStatus.OPEN &&
+      (updateShopListDto.name !== undefined ||
+        updateShopListDto.status !== undefined)
+    ) {
+      await this.validateUniqueOpenListName(userId, newName, shoppingList.id);
+    }
+
     if (updateShopListDto.name !== undefined) {
       shoppingList.name = updateShopListDto.name;
     }
@@ -205,8 +220,36 @@ export class ShopListsService {
     };
   }
 
-  // Formatar resposta
+  // Verificar repetição de nome das listas
+  private async validateUniqueOpenListName(
+    userId: number,
+    name: string,
+    excludeListId?: number,
+  ): Promise<void> {
+    const queryBuilder = this.shoppingListRepository
+      .createQueryBuilder('shopList')
+      .where('shopList.userId = :userId', { userId })
+      .andWhere('shopList.name = :name', { name })
+      .andWhere('shopList.status = :status', {
+        status: ShoppingListStatus.OPEN,
+      });
 
+    if (excludeListId !== undefined) {
+      queryBuilder.andWhere('shopList.id != :excludeListId', {
+        excludeListId,
+      });
+    }
+
+    const existingList = await queryBuilder.getOne();
+
+    if (existingList) {
+      throw new ConflictException(
+        'Você já possui uma lista aberta com este nome.',
+      );
+    }
+  }
+
+  // Formatar resposta
   private async toResponse(
     shoppingList: ShoppingList,
   ): Promise<ShoppingListResponseDto> {
