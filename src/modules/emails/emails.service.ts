@@ -288,6 +288,85 @@ export class EmailsService {
     }
   }
 
+  // Email de Confirmação de Troca de Senha
+  async sendPasswordChangedEmail(recipient: string): Promise<void> {
+    const subject = 'Sua senha foi alterada';
+
+    const text = `
+Olá!
+
+A senha da sua conta no Despensa Inteligente foi alterada com sucesso.
+
+Se você não realizou essa alteração, entre em contato conosco imediatamente para proteger sua conta.
+
+Atenciosamente,
+Equipe Despensa Inteligente
+    `.trim();
+
+    const html = `
+      <!DOCTYPE html>
+      <html lang="pt-BR">
+        <head>
+          <meta charset="UTF-8" />
+          <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+          <title>${subject}</title>
+        </head>
+        <body style="margin: 0; padding: 0; background-color: #f4f7f5; font-family: Arial, Helvetica, sans-serif; color: #333333;">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="padding: 32px 16px;">
+            <tr>
+              <td align="center">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 560px; background-color: #ffffff; border-radius: 8px; overflow: hidden;">
+                  <tr>
+                    <td style="background-color: #176b45; padding: 24px; text-align: center;">
+                      <h1 style="margin: 0; color: #ffffff; font-size: 24px;">Despensa Inteligente</h1>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 32px 24px;">
+                      <h2 style="margin-top: 0; color: #176b45; font-size: 22px;">Senha alterada com sucesso</h2>
+                      <p style="font-size: 16px; line-height: 1.6;">Olá!</p>
+                      <p style="font-size: 16px; line-height: 1.6;">
+                        A senha da sua conta no Despensa Inteligente foi alterada com sucesso.
+                      </p>
+                      <p style="font-size: 16px; line-height: 1.6;">
+                        Se você não realizou essa alteração, entre em contato conosco imediatamente para proteger sua conta.
+                      </p>
+                      <p style="font-size: 16px; line-height: 1.6;">
+                        Atenciosamente,<br />
+                        <strong>Equipe Despensa Inteligente</strong>
+                      </p>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding: 16px 24px; background-color: #f4f7f5; text-align: center;">
+                      <p style="margin: 0; font-size: 12px; color: #777777;">
+                        Esta é uma mensagem automática. Por favor, não responda a este e-mail.
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </body>
+      </html>
+    `;
+
+    const { error } = await this.resend.emails.send({
+      from: this.from,
+      to: recipient,
+      subject,
+      text,
+      html,
+    });
+
+    if (error) {
+      throw new InternalServerErrorException(
+        'Não foi possível enviar o e-mail de confirmação da alteração de senha.',
+      );
+    }
+  }
+
   // Envia o código de confirmação de e-mail.
   async sendVerificationCode(recipient: string, code: string): Promise<void> {
     const expirationMinutes = this.configService.getOrThrow<number>(
@@ -553,6 +632,258 @@ export class EmailsService {
     if (error) {
       throw new InternalServerErrorException(
         'Não foi possível enviar o e-mail de confirmação.',
+      );
+    }
+  }
+
+  // Envia o e-mail de boas-vindas após a confirmação da conta.
+  async sendWelcomeEmail(recipient: string): Promise<void> {
+    const { error } = await this.resend.emails.send({
+      from: this.from,
+      to: recipient,
+      subject: 'Bem-vindo ao Despensa Inteligente!',
+
+      text: [
+        'DESPENSA INTELIGENTE',
+        '',
+        'Sua conta está confirmada!',
+        '',
+        'Parabéns! Seu endereço de e-mail foi confirmado com sucesso.',
+        'Agora você pode aproveitar o Despensa Inteligente para organizar',
+        'sua despensa, acompanhar seus produtos e planejar suas compras.',
+        '',
+        'Obrigado por fazer parte do nosso projeto!',
+        '',
+        'Despensa Inteligente | Organização para o seu dia a dia.',
+      ].join('\n'),
+
+      html: `
+        <!DOCTYPE html>
+        <html lang="pt-BR">
+          <head>
+            <meta charset="UTF-8" />
+            <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+            <meta name="color-scheme" content="light" />
+            <meta name="supported-color-schemes" content="light" />
+            <title>Bem-vindo ao Despensa Inteligente</title>
+          </head>
+
+          <body style="
+            margin: 0;
+            padding: 0;
+            background-color: #f3f6f4;
+            font-family: Arial, Helvetica, sans-serif;
+            color: #24332b;
+          ">
+            <table
+              role="presentation"
+              width="100%"
+              cellspacing="0"
+              cellpadding="0"
+              border="0"
+              style="background-color: #f3f6f4; padding: 32px 12px;"
+            >
+              <tr>
+                <td align="center">
+                  <table
+                    role="presentation"
+                    width="100%"
+                    cellspacing="0"
+                    cellpadding="0"
+                    border="0"
+                    style="
+                      max-width: 560px;
+                      background-color: #ffffff;
+                      border-radius: 16px;
+                      overflow: hidden;
+                      border: 1px solid #e3eae5;
+                    "
+                  >
+                    <!-- Cabeçalho -->
+                    <tr>
+                      <td style="
+                        background-color: #176b45;
+                        padding: 28px 24px;
+                        text-align: center;
+                      ">
+                        <p style="
+                          margin: 0;
+                          color: #ffffff;
+                          font-size: 22px;
+                          line-height: 1.4;
+                          font-weight: bold;
+                          letter-spacing: 0.3px;
+                        ">
+                          Despensa Inteligente
+                        </p>
+
+                        <p style="
+                          margin: 6px 0 0;
+                          color: #d8f3e3;
+                          font-size: 13px;
+                          line-height: 1.5;
+                        ">
+                          Mais organização para o seu dia a dia.
+                        </p>
+                      </td>
+                    </tr>
+
+                    <!-- Conteúdo -->
+                    <tr>
+                      <td style="padding: 36px 28px 32px;">
+                        <p style="
+                          margin: 0 0 10px;
+                          color: #176b45;
+                          font-size: 12px;
+                          font-weight: bold;
+                          letter-spacing: 1.5px;
+                          text-transform: uppercase;
+                        ">
+                          CONTA CONFIRMADA
+                        </p>
+
+                        <h1 style="
+                          margin: 0 0 16px;
+                          color: #24332b;
+                          font-size: 26px;
+                          line-height: 1.3;
+                          font-weight: 700;
+                        ">
+                          Seja bem-vindo!
+                        </h1>
+
+                        <p style="
+                          margin: 0 0 20px;
+                          color: #59665e;
+                          font-size: 15px;
+                          line-height: 1.8;
+                        ">
+                          Seu endereço de e-mail foi confirmado com sucesso.
+                          Agora você já pode aproveitar o
+                          <strong>Despensa Inteligente</strong>!
+                        </p>
+
+                        <p style="
+                          margin: 0 0 24px;
+                          color: #59665e;
+                          font-size: 15px;
+                          line-height: 1.8;
+                        ">
+                          Organize sua despensa, acompanhe seus produtos
+                          e planeje suas compras de forma mais prática.
+                          Estamos felizes em ter você conosco.
+                        </p>
+
+                        <!-- Cartão de boas-vindas -->
+                        <table
+                          role="presentation"
+                          width="100%"
+                          cellspacing="0"
+                          cellpadding="0"
+                          border="0"
+                          style="
+                            background-color: #f0f8f3;
+                            border: 1px solid #d6eadc;
+                            border-radius: 12px;
+                          "
+                        >
+                          <tr>
+                            <td align="center" style="padding: 24px 20px;">
+                              <p style="
+                                margin: 0 0 8px;
+                                color: #176b45;
+                                font-size: 18px;
+                                line-height: 1.5;
+                                font-weight: bold;
+                              ">
+                                Tudo pronto para começar!
+                              </p>
+
+                              <p style="
+                                margin: 0;
+                                color: #59665e;
+                                font-size: 14px;
+                                line-height: 1.8;
+                              ">
+                                Sua conta está ativa e pronta para uso.
+                              </p>
+                            </td>
+                          </tr>
+                        </table>
+
+                        <p style="
+                          margin: 24px 0 0;
+                          color: #59665e;
+                          font-size: 14px;
+                          line-height: 1.8;
+                        ">
+                          Obrigado por fazer parte do
+                          <strong>Despensa Inteligente</strong>.
+                          Esperamos tornar sua rotina mais organizada!
+                        </p>
+                      </td>
+                    </tr>
+
+                    <!-- Rodapé -->
+                    <tr>
+                      <td style="
+                        padding: 22px 28px;
+                        background-color: #f8faf8;
+                        border-top: 1px solid #e8eee9;
+                        text-align: center;
+                      ">
+                        <p style="
+                          margin: 0;
+                          color: #59665e;
+                          font-size: 12px;
+                          line-height: 1.7;
+                        ">
+                          Este é um e-mail automático. Por favor, não responda.
+                        </p>
+
+                        <p style="
+                          margin: 8px 0 0;
+                          color: #176b45;
+                          font-size: 12px;
+                          font-weight: bold;
+                        ">
+                          Despensa Inteligente
+                        </p>
+
+                        <p style="
+                          margin: 6px 0 0;
+                          color: #8a968e;
+                          font-size: 11px;
+                          line-height: 1.6;
+                        ">
+                          Organização, praticidade e controle na sua despensa.
+                        </p>
+                      </td>
+                    </tr>
+                  </table>
+
+                  <p style="
+                    max-width: 500px;
+                    margin: 18px 12px 0;
+                    color: #8a968e;
+                    font-size: 11px;
+                    line-height: 1.6;
+                    text-align: center;
+                  ">
+                    Você recebeu esta mensagem porque confirmou
+                    seu endereço de e-mail no Despensa Inteligente.
+                  </p>
+                </td>
+              </tr>
+            </table>
+          </body>
+        </html>
+      `,
+    });
+
+    if (error) {
+      throw new InternalServerErrorException(
+        'Não foi possível enviar o e-mail de boas-vindas.',
       );
     }
   }
