@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -40,6 +41,8 @@ const AUTH_MESSAGES = {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
@@ -141,6 +144,7 @@ export class AuthService {
     const resetToken = await this.jwtService.signAsync(
       {
         sub: user.id,
+        email: user.email,
         purpose: 'password_reset',
       },
       {
@@ -197,6 +201,15 @@ export class AuthService {
       resetPasswordDto.password,
     );
 
+    void this.emailService
+      .sendPasswordChangedEmail(payload.email)
+      .catch((error) => {
+        this.logger.error(
+          'Falha ao enviar e-mail de confirmação da alteração de senha.',
+          error instanceof Error ? error.stack : String(error),
+        );
+      });
+
     return {
       message: 'Senha redefinida com sucesso. Faça login com sua nova senha.',
     };
@@ -250,6 +263,14 @@ export class AuthService {
     );
 
     await this.usersService.verifyEmail(user.id);
+
+    // Envia o e-mail em segundo plano, sem aguardar sua conclusão.
+    void this.emailService.sendWelcomeEmail(user.email).catch((error) => {
+      this.logger.error(
+        'Falha ao enviar e-mail de boas-vindas.',
+        error instanceof Error ? error.stack : String(error),
+      );
+    });
 
     return this.generateToken(user.id, user.email, user.role);
   }

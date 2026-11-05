@@ -5,7 +5,7 @@ import { IsValidPassword } from '../../../common/decorators/password.decorator';
 
 export class RegisterUserDto {
   @ApiProperty({
-    example: 'usuario@email.com',
+    example: 'usuario@gmail.com',
     description: 'E-mail utilizado para criar a conta.',
   })
   @IsValidEmail()

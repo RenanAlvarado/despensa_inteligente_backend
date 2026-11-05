@@ -194,10 +194,11 @@ export class AuthController {
   @ApiOperation({
     summary: 'Confirma o e-mail do usuário',
     description:
-      'Valida o código recebido por e-mail e confirma a conta do usuário.',
+      'Valida o código recebido por e-mail, confirma a conta e tenta enviar um e-mail de boas-vindas. A confirmação da conta não é afetada por uma eventual falha no envio do e-mail.',
   })
   @ApiOkResponse({
-    description: 'E-mail confirmado com sucesso.',
+    description:
+      'E-mail confirmado com sucesso. Um e-mail de boas-vindas será enviado quando possível. Retorna também um token JWT.',
     type: AuthResponseDto,
   })
   @ApiResponse({
