@@ -37,8 +37,31 @@ export class BatchMovementsController {
   // Criar movimentação
   @ApiOperation({
     summary: 'Registra uma movimentação no lote',
-    description:
-      'Registra uma movimentação de entrada, consumo, descarte ou ajuste e atualiza a quantidade do lote de forma transacional.',
+    description: `
+Registra uma movimentação de estoque no lote informado e atualiza sua quantidade
+de forma transacional.
+
+**Tipos de movimentação disponíveis:**
+
+- **ENTRADA:** adiciona unidades ao estoque. A quantidade deve ser positiva.
+- **CONSUMO:** remove unidades do estoque por consumo. A quantidade deve ser positiva.
+- **DESCARTE:** remove unidades do estoque por descarte. A quantidade deve ser positiva.
+- **AJUSTE:** corrige a quantidade registrada no estoque. A quantidade pode ser
+  positiva ou negativa, representando respectivamente um aumento ou uma redução.
+
+**Como utilizar o ajuste:**
+
+Informe a diferença entre a quantidade real encontrada e a quantidade atual
+registrada no lote.
+
+Exemplo: se o lote possui 20 unidades registradas e foram encontradas apenas
+17, envie uma movimentação AJUSTE com quantidade -3.
+
+A quantidade do lote não pode ficar negativa. Ajustes com quantidade zero
+não são permitidos.
+
+O campo reason pode ser utilizado para informar o motivo da movimentação.
+  `,
   })
   @ApiParam({
     name: 'batchId',
