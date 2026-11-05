@@ -15,9 +15,21 @@ export class CreateBatchMovementDto {
   // Tipo de Movimentação
   @ApiProperty({
     enum: BatchMovementType,
+    enumName: 'BatchMovementType',
     example: BatchMovementType.CONSUMPTION,
-    description:
-      'Tipo da movimentação. ENTRADA aumenta o estoque; CONSUMO e DESCARTE diminuem; AJUSTE pode aumentar ou diminuir.',
+    description: `
+Tipo da movimentação a ser registrada.
+
+Opções disponíveis:
+- ENTRADA: adiciona unidades ao estoque.
+- CONSUMO: remove unidades por consumo.
+- DESCARTE: remove unidades por descarte.
+- AJUSTE: corrige a quantidade registrada no lote.
+
+Para ENTRADA, CONSUMO e DESCARTE, informe uma quantidade positiva.
+Para AJUSTE, informe uma quantidade positiva para aumentar o estoque
+ou negativa para reduzi-lo.
+  `,
   })
   @IsEnum(BatchMovementType, {
     message:

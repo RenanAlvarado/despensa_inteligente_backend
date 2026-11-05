@@ -23,7 +23,7 @@ export function setupSwagger(app: INestApplication): void {
     /api/openapi.json
   `,
     )
-    .setVersion('1.0')
+    .setVersion('2.0')
     .addBearerAuth()
     .addTag(
       'Autenticação',

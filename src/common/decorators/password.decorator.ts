@@ -13,7 +13,7 @@ export function IsValidPassword() {
     }),
     Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9-]).+$/, {
       message:
-        'A senha deve conter pelo menos uma letra maiúscula, uma letra minúscula, um número e um caractere especial.',
+        'A senha deve conter pelo menos uma letra maiúscula, uma letra minúscula, um número e um caractere especial (Exceto -).',
     }),
   );
 }
