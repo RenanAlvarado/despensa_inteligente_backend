@@ -4,7 +4,7 @@ import { IsValidEmail } from '../../../common/decorators/email.decorator';
 
 export class VerifyPasswordResetCodeDto {
   @ApiProperty({
-    example: 'usuario@email.com',
+    example: 'usuario@gmail.com',
     description:
       'E-mail associado à conta que solicitou a recuperação de senha.',
   })
