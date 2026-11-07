@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   forwardRef,
   Inject,
@@ -23,6 +24,8 @@ import { ProductResponseDto } from './dto/product-response.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { Product } from './entities/product.entity';
 import { ProductSource } from './enums/products.enum';
+import { CloudinaryUploadResult } from '../cloudinary/types/cloudinary.types';
+import { CloudinaryService } from '../cloudinary/cloudinary.service';
 
 @Injectable()
 export class ProductsService {
@@ -41,12 +44,22 @@ export class ProductsService {
     private readonly batchesService: BatchesService,
 
     private readonly shopListItemsService: ShopListItemsService,
+
+    private readonly cloudinaryService: CloudinaryService,
   ) {}
 
   // Cadastro Manual de Produtos
   async createManual(
     createProductManualDto: CreateProductManualDto,
+    file?: Express.Multer.File,
   ): Promise<ProductResponseDto> {
+    // Impedir envio simultâneo de URL e arquivo
+    if (file && createProductManualDto.imageUrl) {
+      throw new BadRequestException(
+        'Envie uma imagem por arquivo ou por URL, não ambos.',
+      );
+    }
+
     // Se existir código de barras, ele vai tentar salvar pela open food facts
     const { barcode } = createProductManualDto;
 
@@ -71,12 +84,21 @@ export class ProductsService {
       createProductManualDto.categoryId,
     );
 
+    // Definir URL da imagem
+    let imageUrl = createProductManualDto.imageUrl ?? null;
+
+    if (file) {
+      const uploadResult = await this.cloudinaryService.uploadImage(file);
+
+      imageUrl = uploadResult.secureUrl;
+    }
+
     const product = this.productRepository.create({
       brandId: createProductManualDto.brandId,
       categoryId: createProductManualDto.categoryId,
       name: capitalizeFirstLetter(createProductManualDto.name),
       barcode: createProductManualDto.barcode ?? null,
-      imageUrl: createProductManualDto.imageUrl ?? null,
+      imageUrl,
       unitType: createProductManualDto.unitType,
       unitQuantity: createProductManualDto.unitQuantity,
       source: ProductSource.MANUAL,
@@ -219,8 +241,16 @@ export class ProductsService {
   async update(
     id: number,
     updateProductDto: UpdateProductDto,
+    file?: Express.Multer.File,
   ): Promise<ProductResponseDto> {
     const product = await this.findOneEntity(id);
+
+    // Impedir envio simultâneo de URL e arquivo
+    if (file && updateProductDto.imageUrl) {
+      throw new BadRequestException(
+        'Envie uma imagem por arquivo ou por URL, não ambos.',
+      );
+    }
 
     const updateData = { ...updateProductDto };
 
@@ -231,6 +261,12 @@ export class ProductsService {
       if (product.imageUrl !== null) delete updateData.imageUrl;
       if (product.unitType !== null) delete updateData.unitType;
       if (product.unitQuantity !== null) delete updateData.unitQuantity;
+
+      if (file && product.imageUrl !== null) {
+        throw new BadRequestException(
+          'A imagem deste produto não pode ser alterada.',
+        );
+      }
     }
 
     await this.validateRelations(updateData.brandId, updateData.categoryId);
@@ -239,16 +275,28 @@ export class ProductsService {
       updateData.name = capitalizeFirstLetter(updateData.name);
     }
 
+    // Guardar a URL antiga para excluir depois da atualização
+    const oldImageUrl = product.imageUrl;
+
+    if (file) {
+      const uploadResult = await this.cloudinaryService.uploadImage(file);
+      updateData.imageUrl = uploadResult.secureUrl;
+    }
+
     Object.assign(product, updateData);
 
     const savedProduct = await this.productRepository.save(product);
+
+    if (file && oldImageUrl) {
+      await this.cloudinaryService.deleteImage(oldImageUrl);
+    }
 
     return this.findOne(savedProduct.id);
   }
 
   // Excluir
   async remove(id: number): Promise<void> {
-    await this.findOneEntity(id);
+    const product = await this.findOneEntity(id);
 
     const batchCount = await this.batchesService.countByProductId(id);
 
@@ -262,6 +310,11 @@ export class ProductsService {
         batches: batchCount,
         shopListItems: shopListItemCount,
       });
+    }
+
+    // Excluir imagem do Cloudinary, se for um produto manual
+    if (product.source === ProductSource.MANUAL && product.imageUrl) {
+      await this.cloudinaryService.deleteImage(product.imageUrl);
     }
 
     await this.productRepository.delete(id);
@@ -335,5 +388,12 @@ export class ProductsService {
           }
         : null,
     };
+  }
+
+  // Teste de Imagens
+  async testImageUpload(
+    file: Express.Multer.File,
+  ): Promise<CloudinaryUploadResult> {
+    return await this.cloudinaryService.uploadImage(file);
   }
 }

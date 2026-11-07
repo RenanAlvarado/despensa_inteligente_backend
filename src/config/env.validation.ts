@@ -90,11 +90,23 @@ export function validateEnv(config: Record<string, unknown>) {
       .positive('VERIFICATION_CODE_MAX_ATTEMPTS deve ser um número positivo')
       .default(5),
 
+    // RESEND
     RESEND_API_KEY: z.string().min(1, 'RESEND_API_KEY é obrigatória'),
 
     EMAIL_FROM: z
       .string()
       .email('EMAIL_FROM deve ser um endereço de e-mail válido'),
+
+    // CLOUDINARY
+    CLOUDINARY_CLOUD_NAME: z
+      .string()
+      .min(1, 'CLOUDINARY_CLOUD_NAME é obrigatório'),
+
+    CLOUDINARY_API_KEY: z.string().min(1, 'CLOUDINARY_API_KEY é obrigatória'),
+
+    CLOUDINARY_API_SECRET: z
+      .string()
+      .min(1, 'CLOUDINARY_API_SECRET é obrigatório'),
   });
 
   const result = envSchema.safeParse(config);
