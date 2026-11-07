@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadGatewayException,
+  BadRequestException,
+  Injectable,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { v2 as cloudinary } from 'cloudinary';
 import { CloudinaryUploadResult } from './types/cloudinary.types';
@@ -34,12 +38,18 @@ export class CloudinaryService {
         },
         (error, result) => {
           if (error) {
-            return reject(new Error(error.message));
+            return reject(
+              new BadGatewayException(
+                'Não foi possível enviar a imagem. Tente novamente mais tarde.',
+              ),
+            );
           }
 
           if (!result) {
             return reject(
-              new Error('O Cloudinary não retornou os dados do upload.'),
+              new BadGatewayException(
+                'O serviço de armazenamento não retornou os dados do upload.',
+              ),
             );
           }
 
