@@ -8,6 +8,7 @@ import { CategoriesModule } from '../categories/categories.module';
 import { OpenFoodFactsModule } from '../open-food-facts/open-food-facts.module';
 import { ShopListItemsModule } from '../shop-list-items/shop-list-items.module';
 import { BatchesModule } from '../batches/batches.module';
+import { CloudinaryModule } from '../cloudinary/cloudinary.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { BatchesModule } from '../batches/batches.module';
     OpenFoodFactsModule,
     forwardRef(() => ShopListItemsModule),
     forwardRef(() => BatchesModule),
+    CloudinaryModule,
   ],
   controllers: [ProductsController],
   providers: [ProductsService],
