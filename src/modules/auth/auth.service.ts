@@ -99,7 +99,7 @@ export class AuthService {
     const { email } = forgotPasswordDto;
     const user = await this.usersService.findByEmail(email);
 
-    if (!user || !user.emailVerified) {
+    if (!user) {
       return { message: AUTH_MESSAGES.FORGOT_PASSWORD };
     }
 
@@ -131,7 +131,7 @@ export class AuthService {
   ): Promise<PasswordResetTokenResponseDto> {
     const user = await this.usersService.findByEmail(dto.email);
 
-    if (!user || !user.emailVerified) {
+    if (!user) {
       throw new BadRequestException(AUTH_MESSAGES.INVALID_VERIFICATION_CODE);
     }
 
